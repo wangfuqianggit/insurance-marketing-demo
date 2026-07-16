@@ -1,0 +1,2295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>个险AI营销助手</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-dark: #1d4ed8;
+  --primary-bg: #eff6ff;
+  --accent: #f59e0b;
+  --success: #10b981;
+  --danger: #ef4444;
+  --bg: #f0f4f8;
+  --card: #ffffff;
+  --text: #0f172a;
+  --text-secondary: #475569;
+  --text-light: #94a3b8;
+  --border: #e2e8f0;
+  --shadow: 0 2px 12px rgba(0,0,0,0.05);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --secondary: #8b5cf6;
+  --gradient-1: linear-gradient(135deg,#1e293b,#334155);
+  --gradient-2: linear-gradient(135deg,#2563eb,#8b5cf6);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif; background:#e8ecf1; display:flex; justify-content:center; align-items:center; min-height:100vh; }
+
+.phone { width:390px; height:844px; background:var(--bg); border-radius:40px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3); position:relative; display:flex; flex-direction:column; }
+.phone-notch { position:absolute; top:0; left:50%; transform:translateX(-50%); width:150px; height:28px; background:#1a1a2e; border-radius:0 0 16px 16px; z-index:100; }
+.phone-notch::before { content:''; position:absolute; top:8px; left:50%; transform:translateX(-50%); width:8px; height:8px; background:#2d2d44; border-radius:50%; }
+
+.status-bar { display:flex; justify-content:space-between; padding:10px 24px 4px; font-size:12px; font-weight:600; color:#333; flex-shrink:0; z-index:50; }
+.status-bar .time { font-size:14px; font-weight:700; }
+
+.app { flex:1; display:flex; flex-direction:column; overflow:hidden; position:relative; }
+.header { padding:12px 20px 6px; flex-shrink:0; display:flex; align-items:center; gap:10px; background:var(--bg); z-index:10; }
+.header .h-icon { width:34px; height:34px; border-radius:10px; background:var(--gradient-2); display:flex; align-items:center; justify-content:center; font-size:14px; color:#fff; flex-shrink:0; box-shadow:0 2px 8px rgba(37,99,235,0.25); }
+.header .h-info { flex:1; }
+.header .h-title { font-size:17px; font-weight:700; background:var(--gradient-2); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.header .h-status { font-size:12px; color:var(--text-light); display:flex; align-items:center; gap:4px; }
+.header .h-status .dot { width:5px; height:5px; border-radius:50%; background:#10b981; display:inline-block; animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+.header .h-actions { display:flex; gap:14px; color:var(--text-light); font-size:18px; cursor:pointer; }
+.header .h-actions span { transition:transform .15s; }
+.header .h-actions span:active { transform:scale(0.85); }
+
+.canvas { flex:1; overflow-y:auto; padding:12px 16px 24px; display:flex; flex-direction:column; gap:12px; scroll-behavior:smooth; }
+.canvas::-webkit-scrollbar { width:0; }
+
+.card { background:var(--card); border-radius:var(--radius); padding:14px 16px; box-shadow:0 1px 4px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04); flex-shrink:0; animation:fadeUp .35s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px);} to{opacity:1;transform:translateY(0);} }
+.card-title { font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:8px; display:flex; align-items:center; gap:6px; letter-spacing:0.3px; }
+
+/* Insight Bar */
+.insight-bar { background:var(--gradient-1); color:#fff; border-radius:var(--radius); padding:22px 20px; line-height:1.7; font-size:16px; cursor:pointer; display:flex; align-items:center; gap:12px; position:relative; overflow:hidden; min-height:76px; }
+.insight-bar::after { content:''; position:absolute; top:-30px; right:-20px; width:100px; height:100px; border-radius:50%; background:rgba(255,255,255,0.03); }
+.insight-bar .ib-avatar { font-size:24px; flex-shrink:0; }
+.insight-bar .ib-text { flex:1; position:relative; z-index:1; }
+.insight-bar .ib-text .highlight { color:#fbbf24; font-weight:600; }
+.insight-bar .ib-arrow { color:rgba(255,255,255,0.3); font-size:18px; }
+
+/* Customer Visit Row */
+.c-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
+.c-row:last-child { border-bottom:none; }
+.c-row .cr-a { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:600; font-size:13px; flex-shrink:0; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+.c-row .cr-body { flex:1; min-width:0; }
+.c-row .cr-top { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.c-row .cr-name { font-size:14px; font-weight:600; }
+.c-row .cr-time { font-size:11px; font-weight:600; padding:2px 10px; border-radius:5px; }
+.c-row .cr-addr { font-size:11px; color:var(--text-secondary); margin-top:2px; display:flex; align-items:center; gap:4px; }
+.c-row .cr-addr::before { content:'📍'; font-size:10px; }
+.c-row .cr-actions { display:flex; gap:4px; flex-shrink:0; }
+.cr-act { padding:5px 12px; border-radius:7px; font-size:11px; cursor:pointer; border:none; font-weight:500; transition:all .15s; }
+.cr-act.p { background:var(--primary); color:#fff; box-shadow:0 2px 6px rgba(37,99,235,0.2); }
+.cr-act.p:active { transform:scale(0.93); }
+.cr-act.o { border:1px solid var(--border); color:var(--text-secondary); background:var(--card); }
+.cr-act.o:active { background:var(--primary-bg); border-color:var(--primary-light); }
+.cr-act.d { color:#94a3b8; font-size:11px; background:none; border:none; cursor:pointer; padding:4px 6px; border-radius:6px; transition:all .15s; }
+.cr-act.d:hover { background:#fef2f2; color:var(--danger); }
+
+/* Badge */
+.badge { display:inline-block; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:500; }
+.badge-r { background:#fef2f2; color:var(--danger); }
+.badge-a { background:#fffbeb; color:#d97706; }
+.badge-g { background:#ecfdf5; color:var(--success); }
+.badge-b { background:var(--primary-bg); color:var(--primary); }
+
+/* Voice Zone */
+.cr-move { background:none; border:none; font-size:7px; cursor:pointer; color:var(--text-light); line-height:1; padding:1px 2px; }
+.cr-move:active { color:var(--primary); }
+
+.view-tabs { display:flex; gap:6px; padding:6px 12px; background:var(--bg); border-bottom:1px solid var(--border); flex-shrink:0; }
+.vt-item { flex:1; text-align:center; padding:5px 0; font-size:12px; border-radius:6px; cursor:pointer; font-weight:500; transition:all .15s; background:transparent; color:var(--text-light); }
+.vt-item.active { background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+
+.voice-zone { flex-shrink:0; background:var(--card); padding:8px 16px 12px; border-top:1px solid var(--border); box-shadow:0 -2px 10px rgba(0,0,0,0.03); }
+.ts-section { margin-bottom:8px; }
+.ts-label { font-size:11px; color:var(--text-light); margin-bottom:5px; font-weight:500; }
+.ts-chips { display:flex; gap:5px; overflow-x:auto; scrollbar-width:none; }
+.ts-chips::-webkit-scrollbar { display:none; }
+.ts-c { flex-shrink:0; padding:5px 13px; border-radius:14px; font-size:12px; background:var(--bg); color:var(--text-secondary); border:1px solid transparent; cursor:pointer; transition:all .15s; white-space:nowrap; }
+.ts-c:active { background:var(--primary); color:#fff; }
+.ts-c.p { color:var(--primary); border-color:var(--primary); background:var(--primary-bg); font-weight:500; }
+.vi-row { display:flex; align-items:center; gap:8px; }
+.v-btn { width:42px; height:42px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:20px; background:var(--gradient-2); color:#fff; box-shadow:0 4px 14px rgba(37,99,235,0.3); flex-shrink:0; transition:all .2s; }
+.v-btn:active { transform:scale(0.88); box-shadow:0 2px 8px rgba(37,99,235,0.2); }
+.vi-row input { flex:1; border:1px solid var(--border); border-radius:22px; padding:9px 16px; font-size:13px; background:var(--bg); outline:none; transition:all .2s; }
+.vi-row input:focus { border-color:var(--primary-light); background:var(--card); box-shadow:0 0 0 3px rgba(59,130,246,0.1); }
+.vi-row input::placeholder { color:var(--text-light); }
+.vi-row .send-btn { width:36px; height:36px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:16px; background:var(--primary); color:#fff; flex-shrink:0; box-shadow:0 2px 8px rgba(37,99,235,0.2); transition:all .15s; }
+.vi-row .send-btn:active { transform:scale(0.88); }
+.vi-row .v-rec { display:none; align-items:center; gap:8px; flex:1; background:linear-gradient(135deg,#1e293b,#334155); border-radius:22px; padding:6px 14px; }
+.vi-row .v-rec .rec-dot { width:6px; height:6px; }
+.vi-row .v-rec .rec-time { font-size:12px; color:#94a3b8; font-weight:500; }
+.vi-row .v-rec .rec-wave { flex:1; height:20px; display:flex; align-items:center; gap:1.5px; justify-content:center; }
+.vi-row .v-rec .rec-wave span { width:2.5px; background:#60a5fa; border-radius:2px; animation:wave 1s ease-in-out infinite; }
+.vi-row .v-rec .rec-wave span:nth-child(1) { height:6px; animation-delay:0s; }
+.vi-row .v-rec .rec-wave span:nth-child(2) { height:12px; animation-delay:0.1s; }
+.vi-row .v-rec .rec-wave span:nth-child(3) { height:16px; animation-delay:0.2s; }
+.vi-row .v-rec .rec-wave span:nth-child(4) { height:10px; animation-delay:0.3s; }
+.vi-row .v-rec .rec-wave span:nth-child(5) { height:14px; animation-delay:0.4s; }
+.vi-row .v-rec .rec-wave span:nth-child(6) { height:8px; animation-delay:0.5s; }
+.vi-row .v-rec .rec-wave span:nth-child(7) { height:18px; animation-delay:0.6s; }
+.vi-row .v-rec .rec-wave span:nth-child(8) { height:10px; animation-delay:0.7s; }
+.vi-row .v-rec .rec-wave span:nth-child(9) { height:14px; animation-delay:0.8s; }
+.vi-row .v-rec .rec-wave span:nth-child(10) { height:8px; animation-delay:0.9s; }
+.vi-row .v-rec.show { display:flex; }
+.vi-row .v-input { display:flex; align-items:center; gap:8px; flex:1; }
+.vi-row .v-input.hide { display:none; }
+.v-rec-result { display:none; margin-bottom:8px; padding:8px 12px; background:#f8fafc; border-radius:10px; border:1px solid var(--border); max-height:100px; overflow-y:auto; font-size:12px; line-height:1.6; color:var(--text-secondary); }
+.v-rec-result.show { display:block; }
+.v-rec-result .rr-line { padding:2px 0; display:flex; gap:6px; align-items:flex-start; }
+.v-rec-result .rr-line .rr-label { font-size:10px; background:var(--primary-bg); color:var(--primary); padding:1px 6px; border-radius:3px; font-weight:500; white-space:nowrap; }
+.v-rec-result .rr-line .rr-text { color:var(--text); }
+
+/* Chat page */
+.chat-msgs { flex:1; overflow-y:auto; padding:12px 14px; display:flex; flex-direction:column; gap:10px; }
+.chat-msgs::-webkit-scrollbar { width:0; }
+.chat-msg { display:flex; gap:8px; align-items:flex-start; animation: fadeUp .25s ease; }
+.chat-msg .cm-avatar { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff; font-weight:600; flex-shrink:0; }
+.chat-msg .cm-bubble { max-width:78%; padding:9px 13px; border-radius:14px; font-size:13px; line-height:1.6; position:relative; }
+.chat-msg .cm-bubble .cm-time { font-size:9px; color:var(--text-light); margin-top:3px; opacity:0.7; }
+.chat-msg.cm-user { flex-direction:row-reverse; }
+.chat-msg.cm-user .cm-bubble { background:var(--primary); color:#fff; border-bottom-right-radius:4px; }
+.chat-msg.cm-ai .cm-bubble { background:#f1f4f9; color:var(--text); border-bottom-left-radius:4px; }
+.chat-msg.cm-ai .cm-bubble .cm-time { text-align:left; }
+.chat-msg.cm-user .cm-bubble .cm-time { text-align:right; color:rgba(255,255,255,0.6); }
+.chat-input { flex-shrink:0; padding:8px 14px 12px; border-top:1px solid var(--border); background:var(--card); }
+
+/* Subpage */
+.subpage { position:absolute; top:0; left:0; right:0; bottom:0; z-index:80; background:var(--bg); pointer-events:none; opacity:0; transform:translateX(100%); transition:all .3s ease; display:flex; flex-direction:column; }
+.subpage.show { pointer-events:auto; opacity:1; transform:translateX(0); }
+.sp-header { display:flex; align-items:center; gap:8px; padding:12px 16px 8px; background:var(--bg); flex-shrink:0; z-index:10; }
+.sp-back { font-size:17px; font-weight:500; color:var(--text); cursor:pointer; border:none; background:none; padding:4px 0; display:flex; align-items:center; gap:4px; }
+.sp-title { font-size:14px; color:var(--text-secondary); flex:1; text-align:center; margin-right:40px; }
+.sp-body { flex:1; overflow-y:auto; padding:0 16px 16px; }
+.sp-body::-webkit-scrollbar { width:0; }
+.detail-header { background:linear-gradient(135deg,var(--primary),var(--primary-dark)); color:#fff; padding:20px 20px 24px; border-radius:0 0 24px 24px; margin:0 -16px 16px; }
+.detail-header .dh-name { font-size:22px; font-weight:700; }
+.detail-header .dh-tags { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+.detail-header .dh-tags span { background:rgba(255,255,255,0.2); padding:2px 12px; border-radius:12px; font-size:11px; }
+.detail-header .dh-stats { display:flex; gap:20px; margin-top:12px; }
+.detail-header .dh-stats div { text-align:center; }
+.detail-header .dh-stats .num { font-size:18px; font-weight:700; }
+.detail-header .dh-stats .lbl { font-size:11px; opacity:0.8; }
+.sc { background:var(--card); border-radius:var(--radius); padding:14px; margin-bottom:10px; box-shadow:var(--shadow); }
+.sc-title { font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+.sp-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px; }
+.sp-btn { padding:12px; text-align:center; border-radius:var(--radius-sm); font-size:13px; font-weight:500; cursor:pointer; border:none; }
+.sp-btn.p { background:var(--primary); color:#fff; }
+.sp-btn.p:active { background:var(--primary-dark); }
+.sp-btn.o { background:var(--card); color:var(--primary); border:1px solid var(--primary); }
+.sp-btn.o:active { background:var(--primary-bg); }
+.prop-table { width:100%; border-collapse:collapse; font-size:13px; }
+.prop-table th,.prop-table td { padding:8px 10px; text-align:left; border-bottom:1px solid var(--border); }
+.prop-table th { font-weight:600; color:var(--text-secondary); font-size:11px; }
+
+/* Picker */
+.picker-overlay { position:absolute; top:0; left:0; right:0; bottom:0; z-index:200; background:rgba(0,0,0,0.4); backdrop-filter:blur(4px); display:none; align-items:flex-end; justify-content:center; animation:fadeIn .2s ease; }
+.picker-overlay.show { display:flex; }
+.picker-sheet { background:var(--card); border-radius:20px 20px 0 0; width:100%; padding:16px 20px 24px; animation:slideUp .3s ease; }
+@keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+@keyframes slideUp { from{transform:translateY(100%);} to{transform:translateY(0);} }
+.picker-title { font-size:15px; font-weight:600; text-align:center; margin-bottom:2px; }
+.picker-sub { font-size:12px; color:var(--text-light); text-align:center; margin-bottom:12px; }
+.picker-option { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:12px; cursor:pointer; margin-bottom:6px; transition:background .15s; }
+.picker-option:active { background:var(--primary-bg); }
+.picker-option .po-a { width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:600; font-size:15px; flex-shrink:0; }
+.picker-option .po-info { flex:1; }
+.picker-option .po-n { font-size:14px; font-weight:600; }
+.picker-option .po-d { font-size:12px; color:var(--text-secondary); }
+.picker-close { text-align:center; padding:10px; font-size:13px; color:var(--text-light); cursor:pointer; margin-top:4px; }
+
+/* Toast */
+.toast { position:absolute; bottom:100px; left:20px; right:20px; z-index:300; background:#1e293b; color:#fff; font-size:13px; padding:12px 18px; border-radius:10px; text-align:center; opacity:0; transform:translateY(16px); transition:all .3s; pointer-events:none; }
+.toast.show { opacity:1; transform:translateY(0); }
+
+/* Recording */
+.rec-dot { width:8px; height:8px; border-radius:50%; background:#ef4444; display:inline-block; animation:recPulse 1.2s ease-in-out infinite; }
+@keyframes recPulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.3;transform:scale(0.7);} }
+.transcript-line { display:flex; gap:8px; margin-bottom:8px; font-size:13px; line-height:1.6; }
+.transcript-line .tl-speaker { font-weight:600; flex-shrink:0; min-width:36px; }
+.transcript-line .tl-text { color:var(--text); }
+.transcript-line.tl-agent .tl-speaker { color:var(--primary); }
+.transcript-line.tl-customer .tl-speaker { color:var(--success); }
+.rec-bar { display:flex; align-items:center; gap:10px; padding:10px 14px; background:linear-gradient(135deg,#1e293b,#334155); border-radius:12px; color:#fff; }
+.rec-bar .rec-time { font-size:13px; font-weight:600; }
+.rec-bar .rec-wave { flex:1; height:24px; display:flex; align-items:center; gap:2px; justify-content:center; }
+.rec-bar .rec-wave span { width:3px; background:#60a5fa; border-radius:2px; animation:wave 1s ease-in-out infinite; }
+.rec-bar .rec-wave span:nth-child(1) { height:8px; animation-delay:0s; }
+.rec-bar .rec-wave span:nth-child(2) { height:14px; animation-delay:0.1s; }
+.rec-bar .rec-wave span:nth-child(3) { height:20px; animation-delay:0.2s; }
+.rec-bar .rec-wave span:nth-child(4) { height:12px; animation-delay:0.3s; }
+.rec-bar .rec-wave span:nth-child(5) { height:18px; animation-delay:0.4s; }
+.rec-bar .rec-wave span:nth-child(6) { height:8px; animation-delay:0.5s; }
+.rec-bar .rec-wave span:nth-child(7) { height:16px; animation-delay:0.6s; }
+.rec-bar .rec-wave span:nth-child(8) { height:22px; animation-delay:0.7s; }
+.rec-bar .rec-wave span:nth-child(9) { height:10px; animation-delay:0.8s; }
+.rec-bar .rec-wave span:nth-child(10) { height:14px; animation-delay:0.9s; }
+/* Chat bubble transcript */
+.tl-bubble { display:flex; gap:8px; margin-bottom:10px; align-items:flex-start; }
+.tl-bubble .tb-avatar { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff; font-weight:600; flex-shrink:0; }
+.tl-bubble .tb-content { max-width:80%; padding:8px 12px; border-radius:12px; font-size:13px; line-height:1.5; position:relative; }
+.tl-bubble.tb-agent { flex-direction:row; }
+.tl-bubble.tb-agent .tb-content { background:var(--primary-bg); color:var(--text); border-bottom-left-radius:4px; }
+.tl-bubble.tb-customer { flex-direction:row-reverse; }
+.tl-bubble.tb-customer .tb-content { background:#f0fdf4; color:var(--text); border-bottom-right-radius:4px; }
+.tl-bubble .tb-time { font-size:9px; color:var(--text-light); margin-top:2px; }
+.rec-bar .rec-wave { flex:1; height:24px; display:flex; align-items:center; gap:2px; justify-content:center; }
+.rec-bar .rec-wave span { width:3px; background:#60a5fa; border-radius:2px; animation:wave 1s ease-in-out infinite; }
+.rec-bar .rec-wave span:nth-child(1) { height:8px; animation-delay:0s; }
+.rec-bar .rec-wave span:nth-child(2) { height:14px; animation-delay:0.1s; }
+.rec-bar .rec-wave span:nth-child(3) { height:20px; animation-delay:0.2s; }
+.rec-bar .rec-wave span:nth-child(4) { height:12px; animation-delay:0.3s; }
+.rec-bar .rec-wave span:nth-child(5) { height:18px; animation-delay:0.4s; }
+.rec-bar .rec-wave span:nth-child(6) { height:8px; animation-delay:0.5s; }
+.rec-bar .rec-wave span:nth-child(7) { height:16px; animation-delay:0.6s; }
+.rec-bar .rec-wave span:nth-child(8) { height:22px; animation-delay:0.7s; }
+.rec-bar .rec-wave span:nth-child(9) { height:10px; animation-delay:0.8s; }
+.rec-bar .rec-wave span:nth-child(10) { height:14px; animation-delay:0.9s; }
+@keyframes wave { 0%,100%{transform:scaleY(0.5);} 50%{transform:scaleY(1);} }
+
+@media (max-width:420px){ .phone { width:100%; height:100vh; border-radius:0; } }
+
+/* ===== Todo Items ===== */
+.todo-item { display:flex; align-items:flex-start; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); }
+.todo-item:last-child { border-bottom:none; }
+.todo-cb { width:18px; height:18px; border-radius:4px; border:2px solid var(--text-light); cursor:pointer; flex-shrink:0; margin-top:3px; display:flex; align-items:center; justify-content:center; font-size:11px; transition:all .15s; background:transparent; }
+.todo-cb:active { transform:scale(0.88); }
+.todo-cb.done { background:var(--success); border-color:var(--success); color:#fff; }
+.todo-body { flex:1; min-width:0; }
+.todo-text { font-size:13px; line-height:1.5; cursor:pointer; padding:2px 0; }
+.todo-text.done { text-decoration:line-through; color:var(--text-light); }
+.todo-text.edit { display:none; }
+.todo-input { display:none; width:100%; border:1px solid var(--primary); border-radius:6px; padding:5px 8px; font-size:13px; outline:none; background:var(--primary-bg); font-family:inherit; }
+.todo-input.show { display:block; }
+.todo-meta { display:flex; align-items:center; gap:6px; margin-top:1px; }
+.todo-tag { font-size:10px; padding:1px 8px; border-radius:4px; font-weight:500; }
+.todo-customer { font-size:11px; color:var(--text-light); }
+.todo-del { font-size:12px; color:var(--text-light); cursor:pointer; padding:2px 4px; border-radius:4px; opacity:0; transition:opacity .15s; background:none; border:none; }
+.todo-item:hover .todo-del { opacity:1; }
+.todo-del:hover { color:var(--danger); background:#fef2f2; }
+
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="phone-notch"></div>
+  <div class="status-bar"><span class="time" id="statusTime">9:41</span><span>●●●● ▮</span></div>
+
+  <!-- Main App -->
+  <div class="app" id="mainApp">
+    <div class="header">
+      <div class="h-icon">AI</div>
+      <div class="h-info">
+        <div class="h-title">个险AI营销助手</div>
+        <div class="h-status"><span class="dot"></span> <span id="viewLabel">成员视角</span></div>
+      </div>
+      <div class="h-actions"></div>
+    </div>
+    <div class="view-tabs" id="viewTabs">
+      <div class="vt-item" id="vtMember" onclick="switchView('member')">🙋 成员端</div>
+      <div class="vt-item" id="vtManager" onclick="switchView('manager')">👔 主管端</div>
+    </div>
+    <div class="canvas" id="canvas"></div>
+    <div class="voice-zone">
+      <div class="ts-section">
+        <div class="ts-label">💡 试试说或点击</div>
+        <div class="ts-chips">
+          <span class="ts-c p" onclick="showPicker('建议书','proposal')">📄 建议书</span>
+          <span class="ts-c" onclick="doCoach()">🤝 陪访</span>
+          <span class="ts-c" onclick="showPicker('小结','summary')">📋 小结</span>
+          <span class="ts-c" onclick="showContent()">🌅 AI营销</span>
+        </div>
+      </div>
+      <div class="v-rec-result" id="vRecResult"></div>
+      <div class="vi-row">
+        <button class="v-btn" id="vMicBtn" onmousedown="startVoice()" onmouseup="stopVoice()" onmouseleave="stopVoice()" ontouchstart="startVoice()" ontouchend="stopVoice()">🎤</button>
+        <div class="v-input" id="vInput">
+          <input type="text" id="cmdInput" placeholder="输入指令..." onkeydown="if(event.key==='Enter')doInput()">
+          <button class="send-btn" onclick="doInput()">➤</button>
+        </div>
+        <div class="v-rec" id="vRec">
+          <span class="rec-dot"></span>
+          <span class="rec-time">语音输入中...</span>
+          <div class="rec-wave">
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <button class="send-btn" style="background:#ef4444;box-shadow:0 2px 8px rgba(239,68,68,0.3);font-size:12px;width:30px;height:30px;" onclick="stopVoice()">■</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Subpages -->
+  <div class="subpage" id="spProposal"><div class="sp-header"><button class="sp-back" onclick="closeSubpage('spProposal')">‹ 返回</button><span class="sp-title">智能建议书</span><span style="width:40px;"></span></div><div class="sp-body" id="spProposalBody"></div></div>
+  <div class="subpage" id="spMaterials"><div class="sp-header"><button class="sp-back" onclick="closeSubpage('spMaterials')">‹ 返回</button><span class="sp-title">物料清单</span><span style="width:40px;"></span></div><div class="sp-body" id="spMaterialsBody"></div></div>
+  <div class="subpage" id="spSummary"><div class="sp-header"><button class="sp-back" onclick="closeSubpage('spSummary')">‹ 返回首页</button><span class="sp-title">拜访小结</span><span style="width:40px;"></span></div><div class="sp-body" id="spSummaryBody"></div></div>
+  <div class="subpage" id="spRoute"><div class="sp-header"><button class="sp-back" onclick="closeSubpage('spRoute')">‹ 返回</button><span class="sp-title">路线规划</span><span style="width:40px;"></span></div><div class="sp-body" id="spRouteBody"></div></div>
+  <div class="subpage" id="spCoach"><div class="sp-header"><button class="sp-back" onclick="closeSubpage('spCoach')">‹ 返回</button><span class="sp-title">陪访管理</span><span style="width:40px;"></span></div><div class="sp-body" id="spCoachBody"></div></div>
+  <div class="subpage" id="spSchedule"><div class="sp-header"><button class="sp-back" onclick="closeSubpage('spSchedule')">‹ 返回</button><span class="sp-title">日程管理</span><span style="width:40px;"></span></div><div class="sp-body" id="spScheduleBody"></div></div>
+	  <div class="subpage" id="spVisit"><div class="sp-header"><button class="sp-back" onclick="backFromVisit()">‹ 返回</button><span class="sp-title" id="spVisitTitle">拜访中</span><span style="width:40px;"></span></div><div class="sp-body" id="spVisitBody"></div></div>
+	  <div class="subpage" id="spChat"><div class="sp-header"><button class="sp-back" onclick="closeSubpage('spChat')">‹ 返回</button><span class="sp-title">AI 对话</span><span style="width:40px;"></span></div><div class="sp-body" id="spChatBody" style="display:flex;flex-direction:column;"></div></div>
+	  <div class="subpage" id="spContent"><div class="sp-header"><button class="sp-back" onclick="closeSubpage('spContent')">‹ 返回</button><span class="sp-title">内容营销</span><span style="width:40px;"></span></div><div class="sp-body" id="spContentBody"></div></div>
+
+  <!-- Picker -->
+  <div class="picker-overlay" id="pickerOverlay">
+    <div class="picker-sheet">
+      <div class="picker-title">选择客户</div>
+      <div class="picker-sub" id="pickerSub">请选择要操作的客户</div>
+      <div id="pickerList"></div>
+      <div class="picker-close" onclick="hidePicker()">取消</div>
+    </div>
+  </div>
+
+  <!-- Reschedule Picker -->
+  <div class="picker-overlay" id="rescheduleOverlay">
+    <div class="picker-sheet">
+      <div class="picker-title" id="rescheduleTitle">更换拜访客户</div>
+      <div class="picker-sub" id="rescheduleSub">选择今天可以补位的客户</div>
+      <div id="rescheduleList"></div>
+      <div class="picker-close" onclick="hideReschedule()">取消</div>
+    </div>
+  </div>
+
+  <!-- Next Appointment Picker -->
+  <div class="picker-overlay" id="nextVisitOverlay">
+    <div class="picker-sheet">
+      <div class="picker-title">预约下次拜访</div>
+      <div class="picker-sub" id="nextVisitSub">选择预约时间</div>
+      <div id="nextVisitList"></div>
+      <div class="picker-close" onclick="hideNextVisit()">取消</div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+// ===== Customer Data =====
+const C = {
+  '张建国': { a:'张', bg:'linear-gradient(135deg,#2563eb,#06b6d4)', tag:'⭐ 高价值', tc:'var(--danger)', tbg:'#fef2f2', addr:'朝阳区建国路88号', age:'45岁', fam:'已婚有子女', income:'50万', prem:'8.6万', score:'96', policies:'3份', gap:'重疾保障缺失', note:'客户妻子7月20日生日，建议以此作为情感切入点推荐女性重疾险' },
+  '王德峰': { a:'王', bg:'linear-gradient(135deg,#f59e0b,#ef4444)', tag:'保单到期', tc:'#d97706', tbg:'#fffbeb', addr:'西城区金融街', age:'52岁', fam:'已婚有子女', income:'80万', prem:'12万', score:'88', policies:'4份', gap:'保单即将到期', note:'多份保单即将到期，建议重点沟通续保和新产品升级方案' },
+  '李美玲': { a:'李', bg:'linear-gradient(135deg,#06b6d4,#10b981)', tag:'🌱 潜力', tc:'var(--success)', tbg:'#f0fdf4', addr:'海淀区中关村', age:'34岁', fam:'已婚无子女', income:'30万', prem:'1.2万', score:'72', policies:'1份', gap:'保障严重不足', note:'新客户，只有基本医疗险，建议从重疾保障入手建立信任' },
+  '赵志远': { a:'赵', bg:'linear-gradient(135deg,#f43f5e,#e11d48)', tag:'🔥 紧急', tc:'var(--danger)', tbg:'#fef2f2', addr:'东城区王府井大街', age:'38岁', fam:'已婚有子女', income:'60万', prem:'3.5万', score:'82', policies:'2份', gap:'重疾额度偏低', note:'客户原有20万重疾保额明显不足，建议补充30-50万' },
+  '陈秀英': { a:'陈', bg:'linear-gradient(135deg,#8b5cf6,#6366f1)', tag:'⭐ 高价值', tc:'var(--danger)', tbg:'#fef2f2', addr:'朝阳区望京SOHO', age:'42岁', fam:'离异有子女', income:'100万', prem:'15万', score:'94', policies:'5份', gap:'养老规划空白', note:'高净值客户，已有保单较全，但养老规划空白，建议年金险切入' },
+  '刘伟强': { a:'刘', bg:'linear-gradient(135deg,#14b8a6,#0d9488)', tag:'📈 潜力', tc:'var(--success)', tbg:'#f0fdf4', addr:'海淀区五道口', age:'30岁', fam:'未婚', income:'35万', prem:'0.8万', score:'68', policies:'1份', gap:'保障几乎空白', note:'年轻客户，保险意识较弱，建议从百万医疗+意外险入门' },
+  '周志明': { a:'周', bg:'linear-gradient(135deg,#f97316,#ea580c)', tag:'保单到期', tc:'#d97706', tbg:'#fffbeb', addr:'丰台区丰台科技园', age:'48岁', fam:'已婚有子女', income:'45万', prem:'6万', score:'78', policies:'3份', gap:'部分保单到期', note:'客户有3份保单即将到期，建议提前沟通续保和升级方案' },
+};
+
+// ===== Visit Schedule (editable) =====
+let visits = {
+  today: [
+    { name:'张建国', time:'09:00-10:30', status:'confirmed' },
+    { name:'王德峰', time:'11:00-12:00', status:'confirmed' },
+    { name:'陈秀英', time:'16:00-17:00', status:'confirmed' },
+  ],
+  tomorrow: [
+    { name:'李美玲', time:'14:00-15:00', status:'preparing' },
+  ],
+};
+
+// Next appointments (booked after visits)
+let nextAppointments = [
+  // { name: '张建国', date: '7月21日', time: '09:00' },
+];
+
+// Available reserves (备选客户)
+const reserveCustomers = ['赵志远','陈秀英','刘伟强','周志明'];
+
+// Coaching applications
+let coachApps = [
+  { id: 1, customer:'张建国', manager:'李国强', applicant:'王小明', reason:'重疾+年金复合需求，需要主管支持', time:'7月14日 14:00', status:'approved', leadRole:'applicant' },
+  { id: 2, customer:'陈秀英', manager:'李国强', applicant:'赵丽丽', reason:'客户对产品有疑虑，需要主管协助解答', time:'7月14日 10:30', status:'pending', leadRole:'manager' },
+  { id: 3, customer:'刘伟强', manager:'张敏', applicant:'孙浩', reason:'高净值客户，需资深主管面谈', time:'7月15日 15:00', status:'pending', leadRole:'applicant' },
+  { id: 4, customer:'周志明', manager:'李国强', applicant:'王小明', reason:'客户对产品组合有疑问，需要主管协助解答', time:'7月16日 09:00', status:'pending', leadRole:'applicant' },
+];
+let coachIdCounter = 5;
+let appView = 'member'; // 'member' | 'manager'
+let performanceTab = 'personal'; // 'personal' | 'team'
+
+function switchView(view) {
+  appView = view;
+  document.getElementById('viewLabel').textContent = view === 'manager' ? '主管视角' : '成员视角';
+  document.getElementById('vtMember').className = 'vt-item' + (view === 'member' ? ' active' : '');
+  document.getElementById('vtManager').className = 'vt-item' + (view === 'manager' ? ' active' : '');
+  // Refresh visible content
+  if (document.getElementById('spCoach').classList.contains('show')) {
+    renderCoachPage();
+  } else if (document.getElementById('spSchedule').classList.contains('show')) {
+    renderSchedule();
+  } else {
+    renderCanvas();
+  }
+}
+
+// Initialize active tab on load
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('vtMember').className = 'vt-item active';
+});
+let ongoingVisit = null; // name of customer being visited
+let isRecording = false;
+let visitTranscript = []; // { speaker, text, time }
+let coachNotes = []; // 陪访实时记录
+let coachSummaries = []; // 已完成陪访摘要 { customer, applicant, manager, time, coachId }
+
+// ===== Todo System =====
+let todoIdCounter = 1;
+let todoList = [];
+let _summaryCustomer = '';
+
+function initCustomerTodos(name) {
+  // Check if todos already exist for this customer visit
+  if (todoList.some(t => t.customer === name && t.fromVisit)) return;
+  
+  const isZhang = name === '张建国';
+  const isWang = name === '王德峰';
+  const todos = [
+    { id: todoIdCounter++, customer: name, text: '发送感谢消息，重申方案核心价值', due: '今天', fromVisit: true, status: 'pending' },
+    { id: todoIdCounter++, customer: name, text: '补发详细资料和定制方案', due: '明天', fromVisit: true, status: 'pending' },
+  ];
+  if (isZhang) {
+    todos.push({ id: todoIdCounter++, customer: name, text: '客户妻子生日祝福+女性重疾险方案', due: '7月20日', fromVisit: true, status: 'pending' });
+  } else if (isWang) {
+    todos.push({ id: todoIdCounter++, customer: name, text: '二次跟进，确认意向', due: '3天后', fromVisit: true, status: 'pending' });
+  } else {
+    todos.push({ id: todoIdCounter++, customer: name, text: '二次跟进，确认意向', due: '3天后', fromVisit: true, status: 'pending' });
+  }
+  todoList = todos.concat(todoList);
+}
+
+function toggleTodo(id) {
+  const t = todoList.find(t => t.id === id);
+  if (t) { t.status = t.status === 'done' ? 'pending' : 'done'; renderCanvas(); refreshVisibleTodos(); }
+}
+
+function editTodo(id, newText) {
+  const t = todoList.find(t => t.id === id);
+  if (t && newText.trim()) { t.text = newText.trim(); renderCanvas(); refreshVisibleTodos(); }
+}
+
+function deleteTodo(id) {
+  const t = todoList.find(t => t.id === id);
+  todoList = todoList.filter(x => x.id !== id);
+  renderCanvas();
+  refreshVisibleTodos();
+}
+
+function refreshVisibleTodos() {
+  // Refresh summary page todo list if open
+  var el = document.getElementById('summaryTodoList');
+  if (el && document.getElementById('spSummary').classList.contains('show')) {
+    el.innerHTML = renderTodoHtml(getCustomerTodos(_summaryCustomer), false);
+  }
+  // Refresh schedule page if open (re-render to update todo card)
+  if (document.getElementById('spSchedule').classList.contains('show')) {
+    renderSchedule();
+  }
+}
+
+function getPendingTodos() { return todoList.filter(t => t.status === 'pending'); }
+function getCustomerTodos(name) { return todoList.filter(t => t.customer === name); }
+function getTodosForDay(dayOffset) {
+  var today = new Date(); today.setHours(0,0,0,0);
+  var target = new Date(today); target.setDate(today.getDate() + dayOffset);
+  return todoList.filter(function(t) {
+    if (t.due === '今天') return dayOffset === 0;
+    if (t.due === '明天') return dayOffset === 1;
+    var match = t.due.match(/(\d+)天后/);
+    if (match) return dayOffset === parseInt(match[1]);
+    var absMatch = t.due.match(/(\d+)月(\d+)日/);
+    if (absMatch) {
+      var m = parseInt(absMatch[1]) - 1, d = parseInt(absMatch[2]);
+      return target.getMonth() === m && target.getDate() === d;
+    }
+    return false;
+  });
+}
+
+function editClick(id) {
+  var st = document.getElementById('st_' + id);
+  var si = document.getElementById('sti_' + id);
+  if (st && si) { st.style.display = 'none'; si.style.display = 'block'; si.focus(); }
+}
+function doEdit(id, input) {
+  editTodo(id, input.value);
+  var st = document.getElementById('st_' + id);
+  if (st) { st.textContent = input.value; st.style.display = ''; }
+  input.style.display = 'none';
+}
+
+function renderTodoHtml(todos, showCustomer) {
+  if (!todos || todos.length === 0) return '<div style="font-size:13px;color:var(--text-light);padding:8px 0;">暂无待办</div>';
+  return todos.map(t => {
+    const dueColor = t.due === '今天' ? 'var(--danger)' : t.due === '明天' ? 'var(--accent)' : 'var(--success)';
+    const customerHtml = showCustomer ? '<span class="todo-customer">' + t.customer + '</span>' : '';
+    const safeText = t.text.replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    return '<div class="todo-item">'
+      + '<div class="todo-cb' + (t.status === 'done' ? ' done' : '') + '" onclick="toggleTodo(' + t.id + ')">' + (t.status === 'done' ? '✓' : '') + '</div>'
+      + '<div class="todo-body">'
+      + '<div class="todo-text' + (t.status === 'done' ? ' done' : '') + '" id="st_' + t.id + '" onclick="editClick(' + t.id + ')">' + safeText + '</div>'
+      + '<input class="todo-input show" id="sti_' + t.id + '" value="' + safeText + '" onblur="doEdit(' + t.id + ',this)" onkeydown="if(event.key===\'Enter\')this.blur()">'
+      + '<div class="todo-meta">'
+      + customerHtml
+      + '<span class="todo-tag" style="background:' + dueColor + '15;color:' + dueColor + ';">' + t.due + '</span>'
+      + '</div></div>'
+      + '<button class="todo-del" onclick="deleteTodo(' + t.id + ');renderCanvas();" title="删除">✕</button>'
+      + '</div>';
+  }).join('');
+}
+
+
+// ===== Utils =====
+let toastTimer;
+function showToast(m) { const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),1800); }
+
+function openSubpage(id) { document.getElementById(id).classList.add('show'); }
+function closeSubpage(id) { document.getElementById(id).classList.remove('show'); }
+function closeAllSubpages() {
+  var ids = ['spProposal','spMaterials','spSummary','spRoute','spVisit','spChat','spContent','spSchedule','spCoach'];
+  for (var i = 0; i < ids.length; i++) { closeSubpage(ids[i]); }
+}
+
+// ===== Picker =====
+const pickerOverlay = document.getElementById('pickerOverlay');
+const pickerSub = document.getElementById('pickerSub');
+const pickerList = document.getElementById('pickerList');
+let pickerCallback = null;
+
+function showPicker(subtitle, action) {
+  pickerSub.textContent = subtitle;
+  pickerList.innerHTML = '';
+  // Aggregate all visit customers
+  let names = [];
+  visits.today.forEach(v => { if(!names.includes(v.name)) names.push(v.name); });
+  visits.tomorrow.forEach(v => { if(!names.includes(v.name)) names.push(v.name); });
+  names.forEach(name => {
+    const c = C[name]; if(!c) return;
+    const div = document.createElement('div');
+    div.className = 'picker-option';
+    div.onclick = () => { const cb = pickerCallback; hidePicker(); if(cb) cb(name, action); };
+    div.innerHTML = `<div class="po-a" style="background:${c.bg};">${c.a}</div><div class="po-info"><div class="po-n">${name}</div><div class="po-d">${c.age} · ${c.tag}</div></div>`;
+    pickerList.appendChild(div);
+  });
+  pickerOverlay.classList.add('show');
+  pickerCallback = (name, action) => {
+    switch(action) {
+      case 'proposal': showProposal(name); break;
+      case 'materials': showMaterials(name); break;
+      case 'summary': showSummary(name); break;
+      default: showToast(`已选择${name}`);
+    }
+  };
+}
+function hidePicker() { pickerOverlay.classList.remove('show'); pickerCallback=null; }
+
+// ===== Reschedule =====
+let rescheduleMode = 'replace'; // 'replace' | 'add'
+let rescheduleTarget = '';
+
+function showReschedule(name) {
+  rescheduleTarget = name;
+  rescheduleMode = 'replace';
+  document.getElementById('rescheduleTitle').textContent = '更换拜访客户';
+  document.getElementById('rescheduleSub').textContent = '选择今天可以补位的客户';
+  renderRescheduleList();
+  document.getElementById('rescheduleOverlay').classList.add('show');
+}
+
+function showAddCustomer() {
+  rescheduleTarget = '';
+  rescheduleMode = 'add';
+  document.getElementById('rescheduleTitle').textContent = '新增拜访客户';
+  document.getElementById('rescheduleSub').textContent = '选择要新增的客户';
+  renderRescheduleList();
+  document.getElementById('rescheduleOverlay').classList.add('show');
+}
+
+function renderRescheduleList() {
+  const list = document.getElementById('rescheduleList');
+  list.innerHTML = '';
+  // Update title/subtitle dynamically
+  const titleEl = document.getElementById('rescheduleTitle');
+  const subEl = document.getElementById('rescheduleSub');
+  if (subEl) { subEl.style.display = rescheduleMode === 'add' ? 'none' : ''; subEl.textContent = rescheduleMode === 'add' ? '' : '选择今天可以补位的客户'; }
+
+  // Mode toggle (only show in replace mode)
+  if (rescheduleMode !== 'add') {
+    const modeDiv = document.createElement('div');
+    modeDiv.style.cssText = 'display:flex;gap:8px;margin-bottom:12px;';
+    modeDiv.innerHTML = '<button class="cr-act p" style="flex:1;" onclick="rescheduleMode=\'replace\';renderRescheduleList()">🔄 替换客户</button><button class="cr-act o" style="flex:1;" onclick="rescheduleMode=\'add\';renderRescheduleList()">➕ 新增客户</button>';
+    list.appendChild(modeDiv);
+  }
+
+  if (rescheduleMode === 'replace' && !rescheduleTarget) {
+    const tip = document.createElement('div');
+    tip.style.cssText = 'font-size:12px;color:var(--text-light);padding:8px 0;';
+    tip.textContent = '请从今日拜访中选择要替换的客户';
+    list.appendChild(tip);
+    return;
+  }
+
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:12px;color:var(--text-secondary);margin-bottom:6px;font-weight:500;';
+  title.textContent = rescheduleMode === 'replace' ? ('选择替换 ' + rescheduleTarget + ' 的客户：') : '选择要新增的客户：';
+  list.appendChild(title);
+
+  reserveCustomers.forEach(name => {
+    const div = document.createElement('div');
+    div.className = 'picker-option';
+    div.onclick = () => {
+      hideReschedule();
+      if (rescheduleMode === 'replace') {
+        visits.today = visits.today.map(v => v.name === rescheduleTarget ? { ...v, name: name, status: 'confirmed' } : v);
+        showToast(`✅ ${rescheduleTarget} 已更换为 ${name}`);
+      } else {
+        visits.today.push({ name: name, time: '待定', status: 'confirmed' });
+        recalculateRoute();
+        showToast(`✅ 已新增 ${name} 到今日拜访`);
+        if (document.getElementById('spSchedule').classList.contains('show')) renderSchedule();
+      }
+      renderCanvas();
+    };
+    const c = C[name];
+    div.innerHTML = '<div class="po-a" style="background:' + (c?.bg||'#6366f1') + ';">' + (c?.a||name[0]) + '</div><div class="po-info"><div class="po-n">' + name + ' <span style="font-size:11px;font-weight:400;color:var(--text-light);">' + (c?.age||'') + '</span></div><div class="po-d">' + (c?.addr||'') + ' · ' + (c?.tag||'备选客户') + '</div></div>';
+    list.appendChild(div);
+  });
+}
+function hideReschedule() { document.getElementById('rescheduleOverlay').classList.remove('show'); }
+
+// ===== Next Appointment =====
+function smartDetectTime(name) {
+  // Scan transcript for time-related phrases
+  const allText = visitTranscript.map(t => t.text).join(' ');
+  let detected = null;
+
+  // 星期检测
+  const dayMap = { '下周一':'7月20日','下周二':'7月21日','下周三':'7月22日','下周四':'7月23日','下周五':'7月24日' };
+  const weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
+  const today = new Date();
+
+  if (allText.includes('明天')) detected = { label:'明天', date:'7月15日' };
+  else if (allText.includes('后天')) detected = { label:'后天', date:'7月16日' };
+  else if (allText.includes('下周')) {
+    for (const [k,v] of Object.entries(dayMap)) {
+      if (allText.includes(k)) { detected = { label:k, date:v }; break; }
+    }
+    if (!detected) detected = { label:'下周', date:'7月20日' };
+  }
+
+  // 时间检测
+  const timeMatch = allText.match(/(\d+)\s*点/);
+  if (timeMatch) {
+    const hour = parseInt(timeMatch[1]);
+    const timeStr = `${String(hour).padStart(2,'0')}:00`;
+    if (detected) detected.time = timeStr;
+    else detected = { label:'', date:'', time: timeStr };
+  }
+
+  // 上/下午检测
+  if (allText.includes('下午') && detected && !detected.ampm) {
+    detected.ampm = '下午';
+    if (detected.label) detected.label += '下午';
+  } else if (allText.includes('上午') && detected && !detected.ampm) {
+    detected.ampm = '上午';
+    if (detected.label) detected.label += '上午';
+  }
+
+  return detected;
+}
+
+function showNextVisitPicker(name) {
+  const sub = document.getElementById('nextVisitSub');
+  const list = document.getElementById('nextVisitList');
+
+  // Smart detect from transcript
+  const detected = smartDetectTime(name);
+  const defaultDate = detected?.date
+    ? `2026-07-${detected.date.replace(/[^\d]/g,'').padStart(2,'0')}`
+    : '2026-07-15';
+  const defaultTime = detected?.time || '09:00';
+
+  sub.textContent = detected
+    ? `🎯 对话中识别到：「${detected.label}${detected.time||''}」，确认或修改时间`
+    : `为 ${name} 预约下次拜访时间`;
+
+  list.innerHTML = `
+    ${detected ? `
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 14px;margin-bottom:8px;">
+      <div style="font-size:12px;color:var(--primary);font-weight:500;">🤖 AI从对话中识别到</div>
+      <div style="font-size:14px;font-weight:600;margin-top:2px;">${detected.label} ${detected.time||''}</div>
+    </div>` : ''}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+      <span class="ts-c ${!detected || detected.label === '明天' ? 'p' : ''}" onclick="setQuickDate('明天','7月15日')">明天</span>
+      <span class="ts-c ${detected?.label === '后天' ? 'p' : ''}" onclick="setQuickDate('后天','7月16日')">后天</span>
+      <span class="ts-c ${detected?.label === '下周一' ? 'p' : ''}" onclick="setQuickDate('下周一','7月20日')">下周一</span>
+      <span class="ts-c ${detected?.label === '下周三' ? 'p' : ''}" onclick="setQuickDate('下周三','7月22日')">下周三</span>
+      <span class="ts-c" onclick="setQuickDate('下周','7月20日')">下周</span>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+      <span class="ts-c" onclick="setQuickTime('09:00','上午')">上午 9:00</span>
+      <span class="ts-c" onclick="setQuickTime('10:00','上午')">上午 10:00</span>
+      <span class="ts-c" onclick="setQuickTime('14:00','下午')">下午 14:00</span>
+      <span class="ts-c" onclick="setQuickTime('15:00','下午')">下午 15:00</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+      <input type="date" id="npDate" value="${defaultDate}" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--card);">
+      <input type="time" id="npTime" value="${defaultTime}" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--card);">
+    </div>
+    <button class="sp-btn p" style="width:100%;" onclick="confirmNextVisit('${name}')">✅ 确认预约</button>
+  `;
+  document.getElementById('nextVisitOverlay').classList.add('show');
+}
+
+let quickDate = '';
+let quickTime = '';
+
+function setQuickDate(label, dateStr) {
+  quickDate = dateStr;
+  const d = dateStr.split('月');
+  const month = d[0].padStart(2,'0');
+  const day = d[1].replace(/[^\d]/g,'').padStart(2,'0');
+  document.getElementById('npDate').value = `2026-${month}-${day}`;
+  showToast(`📅 已选${label}`);
+}
+
+function setQuickTime(timeStr, ampm) {
+  quickTime = timeStr;
+  document.getElementById('npTime').value = timeStr;
+  showToast(`⏰ 已选${ampm} ${timeStr}`);
+}
+
+function confirmNextVisit(name) {
+  const dateVal = document.getElementById('npDate').value;
+  const timeVal = document.getElementById('npTime').value;
+  if (!dateVal || !timeVal) { showToast('请选择日期和时间'); return; }
+
+  // Format display date
+  const parts = dateVal.split('-');
+  const month = parseInt(parts[1]);
+  const day = parseInt(parts[2]);
+  const weekdays = ['日','一','二','三','四','五','六'];
+  const dow = weekdays[new Date(dateVal).getDay()];
+  const displayDate = `${month}月${day}日（周${dow}）`;
+  const displayTime = timeVal.substring(0,5);
+
+  hideNextVisit();
+  nextAppointments.push({ name, date: `${displayDate} ${displayTime}`, time: `${displayTime}` });
+
+  // Check if tomorrow
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const selDate = new Date(dateVal);
+  if (selDate.toDateString() === tomorrow.toDateString() && !visits.tomorrow.find(v => v.name === name)) {
+    visits.tomorrow.push({ name, time: displayTime, status: 'booked' });
+  }
+
+  showToast(`✅ 已预约 ${name} · ${displayDate} ${displayTime}`);
+  renderCanvas();
+}
+function hideNextVisit() { document.getElementById('nextVisitOverlay').classList.remove('show'); }
+
+// ===== Schedule Detail =====
+let scheduleSelDay = 0; // 0 = today, 1 = tomorrow, etc.
+
+function showSchedule() {
+  scheduleSelDay = 0;
+  renderSchedule();
+  openSubpage('spSchedule');
+}
+
+function deleteScheduleVisit(name) {
+  if (scheduleSelDay === 0) {
+    visits.today = visits.today.filter(v => v.name !== name);
+  } else if (scheduleSelDay === 1) {
+    visits.tomorrow = visits.tomorrow.filter(v => v.name !== name);
+  } else {
+    const d = new Date(); d.setDate(d.getDate() + scheduleSelDay);
+    const ds = (d.getMonth()+1) + '月' + d.getDate() + '日';
+    nextAppointments = nextAppointments.filter(a => !(a.name === name && a.date.includes(ds)));
+  }
+  renderSchedule();
+  renderCanvas();
+  showToast('已删除 ' + name);
+}
+function renderSchedule() {
+  const today = new Date();
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - today.getDay());
+  const weekdays = ['日','一','二','三','四','五','六'];
+  const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+  // Selected day
+  const selDate = new Date(today);
+  selDate.setDate(today.getDate() + scheduleSelDay);
+  const isToday = scheduleSelDay === 0;
+  const isTomorrow = scheduleSelDay === 1;
+  const dayLabel = isToday ? '今日' : isTomorrow ? '明日' : `${selDate.getMonth()+1}月${selDate.getDate()}日`;
+  const dowLabel = `周${weekdays[selDate.getDay()]}`;
+
+  // Get visits for selected day
+  let dayVisits = [];
+  if (isToday) dayVisits = visits.today;
+  else if (isTomorrow) dayVisits = visits.tomorrow;
+  // Future days with next appointments
+  else {
+    const dateStr = `${selDate.getMonth()+1}月${selDate.getDate()}日`;
+    const apps = nextAppointments.filter(a => a.date.includes(dateStr));
+    dayVisits = apps.map(a => ({ name: a.name, time: a.time, status: 'booked' }));
+  }
+
+  // Build week bar (clickable)
+  let weekHtml = '';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    const diff = Math.round((d - today) / 86400000);
+    const selected = diff === scheduleSelDay;
+    const hasVisit = (diff === 0 && visits.today.length > 0) ||
+      (diff === 1 && visits.tomorrow.length > 0) ||
+      (diff > 1 && nextAppointments.some(a => {
+        const m = a.date.match(/(\d+)月(\d+)日/);
+        return m && parseInt(m[1]) === d.getMonth()+1 && parseInt(m[2]) === d.getDate();
+      }));
+    weekHtml += `
+      <div onclick="scheduleSelDay=${diff};renderSchedule()" style="flex:1;text-align:center;padding:6px 0;border-radius:8px;cursor:pointer;background:${selected ? 'var(--primary)' : 'transparent'};color:${selected ? '#fff' : 'var(--text-secondary)'};${selected ? '' : ''}">
+        <div style="font-size:10px;">${weekdays[i]}</div>
+        <div style="font-size:14px;font-weight:${selected ? '700' : '500'};position:relative;">${d.getDate()}
+          ${hasVisit && !selected ? '<div style="width:4px;height:4px;border-radius:50%;background:var(--primary);margin:1px auto 0;"></div>' : ''}
+        </div>
+      </div>`;
+  }
+
+  // Timeline for selected day
+  const timeSlots = [
+    { label:'上午', range:'09:00-12:00', visits:dayVisits.filter(v => {
+      const h = parseInt(v.time);
+      return h < 12 || (h >= 9 && h < 12);
+    })},
+    { label:'中午', range:'12:00-14:00', visits:dayVisits.filter(v => {
+      const h = parseInt(v.time);
+      return h >= 12 && h < 14;
+    })},
+    { label:'下午', range:'14:00-18:00', visits:dayVisits.filter(v => {
+      const h = parseInt(v.time);
+      return h >= 14 && h < 18;
+    })},
+    { label:'晚上', range:'18:00-21:00', visits:dayVisits.filter(v => {
+      const h = parseInt(v.time);
+      return h >= 18 || h < 9;
+    })},
+  ];
+
+  const timelineHtml = timeSlots.map(slot => {
+    const hasVisits = slot.visits.length > 0;
+    if (!hasVisits) {
+      return `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-left:2px solid var(--border);padding-left:10px;margin-left:4px;">
+      <div style="width:76px;font-size:10px;color:var(--text-light);flex-shrink:0;">${slot.range}</div>
+      <div style="font-size:12px;color:var(--text-light);cursor:pointer;" onclick="showAddCustomer()">➕ 点击新增</div>
+    </div>`;
+    }
+    return slot.visits.map(v => {
+      const c = C[v.name];
+      const coach = coachApps.find(a => a.customer === v.name && a.status === 'approved');
+      const roleLabel = coach ? (coach.leadRole === 'manager' ? '主管主谈' : '代理人主谈') : '';
+      return `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-left:2px solid var(--border);padding-left:10px;margin-left:4px;">
+      <div style="width:76px;font-size:11px;font-weight:500;color:var(--text-secondary);flex-shrink:0;">${v.time}</div>
+      <div style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:var(--primary-bg);border-radius:6px;flex:1;cursor:pointer;" onclick="{closeSubpage('spSchedule');showPrepMenu('${v.name}')}">
+        <div style="width:24px;height:24px;border-radius:6px;background:${c?.bg||'#6366f1'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:600;flex-shrink:0;">${c?.a||v.name[0]}</div>
+        <div style="flex:1;font-size:12px;font-weight:500;">${v.name}</div>
+        ${coach ? '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:var(--primary);color:#fff;">🤝'+roleLabel+'</span>' : ''}
+        <span style="font-size:10px;color:var(--text-light);">${c?.addr?.substring(0,8)||''}</span>
+        <span style="font-size:12px;color:#ccc;cursor:pointer;padding:2px 4px;flex-shrink:0;" onclick="event.stopPropagation();if(confirm('确认删除 ${v.name} 的拜访？'))deleteScheduleVisit('${v.name}')">✕</span>
+      </div>
+    </div>`;
+    }).join('');
+  }).join('');
+
+  // Arrow navigation buttons
+  const navHtml = `
+    <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+      <button class="cr-act o" onclick="scheduleSelDay--;renderSchedule()" ${scheduleSelDay <= -1 ? 'disabled style=opacity:0.3' : ''}>‹ 前一天</button>
+      <div style="flex:1;text-align:center;">
+        <span style="font-size:15px;font-weight:600;">${dayLabel}</span>
+        <span style="font-size:12px;color:var(--text-light);margin-left:6px;">${dowLabel}</span>
+        <span style="font-size:11px;color:var(--text-light);margin-left:4px;">${dayVisits.length}个拜访</span>
+      </div>
+      <button class="cr-act o" onclick="scheduleSelDay++;renderSchedule()">后一天 ›</button>
+    </div>`;
+
+  document.getElementById('spScheduleBody').innerHTML = `
+    <div style="padding:12px 0 8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:18px;font-weight:700;">📅 ${appView === 'manager' ? '团队日程' : '日程'}</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          ${appView === 'manager' ? '<span style="font-size:10px;padding:2px 8px;border-radius:4px;background:#eef2ff;color:var(--primary);">主管视角</span>' : ''}
+          <span style="font-size:12px;color:var(--text-light);">${today.getFullYear()}年${today.getMonth()+1}月</span>
+          
+        </div>
+      </div>
+      ${appView === 'manager' ? '<div style="font-size:12px;color:var(--text-secondary);margin-top:6px;padding:6px 10px;background:var(--primary-bg);border-radius:6px;">👥 查看所有团队成员日程安排 · 点击主管端首页查看成员详情</div>' : ''}
+      <div style="display:flex;gap:4px;margin-top:10px;padding:4px;background:var(--card);border-radius:12px;box-shadow:var(--shadow);">
+        ${weekHtml}
+      </div>
+      ${navHtml}
+    </div>
+
+    <div class="card" style="padding:10px 14px;">
+      <div class="card-title" style="margin-bottom:4px;">${dayLabel} · 时间线</div>
+      ${timelineHtml}
+    </div>
+
+    ${getTodosForDay(scheduleSelDay).length > 0 ? `
+    <div class="card" style="padding:10px 14px;">
+      <div class="card-title" style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+        <span>📌 待办事项</span>
+        <span class="badge badge-r" style="font-size:10px;">${getTodosForDay(scheduleSelDay).filter(function(t){return t.status==='pending';}).length}项未完成</span>
+      </div>
+      <div>
+        ${renderTodoHtml(getTodosForDay(scheduleSelDay), true)}
+      </div>
+    </div>` : ''}
+
+    ${isToday && nextAppointments.length > 0 ? `
+    <div class="card" style="padding:10px 14px;">
+      <div class="card-title" style="margin-bottom:4px;">🔄 后续已预约</div>
+      ${nextAppointments.map(a => {
+        const c = C[a.name];
+        return `
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;" onclick="{closeSubpage('spSchedule');showPrepMenu('${a.name}')}">
+          <div style="width:26px;height:26px;border-radius:6px;background:${c?.bg||'#6366f1'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;">${c?.a||a.name[0]}</div>
+          <div style="flex:1;"><span style="font-size:13px;font-weight:500;">${a.name}</span></div>
+          <span style="font-size:11px;background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:4px;">${a.date}</span>
+        </div>`;
+      }).join('')}
+    </div>` : ''}
+  `;
+}
+
+// ===== Render Canvas =====
+function renderCanvas() {
+  const agentCustomers = ['张建国', '王德峰', '李美玲'];
+  const myToday = appView === 'member' ? visits.today.filter(v => agentCustomers.includes(v.name)) : visits.today;
+  const todayHtml = myToday.map(v => {
+    const c = C[v.name];
+    const coach = coachApps.find(a => a.customer === v.name && a.status === 'approved');
+    const roleTag = coach ? (coach.leadRole === 'manager' ? '🤝主管主谈' : '🤝代理人主谈') : '';
+    return `<div class="c-row" style="cursor:pointer;" onclick="showVisit('${v.name}')">
+      <div class="cr-a" style="background:${c?.bg||'#6366f1'};">${c?.a||v.name[0]}</div>
+      <div class="cr-body">
+        <div class="cr-top">
+          <span class="cr-name">${v.name}</span>
+          <span class="cr-time" style="background:#eef2ff;color:var(--primary);">${v.time}</span>
+          ${coach ? `<span class="badge badge-b">${roleTag}</span>` : ''}
+        </div>
+        <div class="cr-addr">${c?.addr||''}</div>
+      </div>
+      <div class="cr-actions">
+        <button class="cr-act p" onclick="event.stopPropagation();showVisit('${v.name}')">拜访</button>
+        <button class="cr-act o" onclick="event.stopPropagation();showPrepMenu('${v.name}')">筹备</button>
+        <button class="cr-act d" onclick="event.stopPropagation();showReschedule('${v.name}')">↻</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  const tomorrowHtml = visits.tomorrow.map(v => {
+    const c = C[v.name];
+    return `<div class="c-row">
+      <div class="cr-a" style="background:${c?.bg||'#6366f1'};">${c?.a||v.name[0]}</div>
+      <div class="cr-body">
+        <div class="cr-top">
+          <span class="cr-name">${v.name}</span>
+          <span class="cr-time" style="background:#ecfdf5;color:var(--success);">${v.time||'待定'}</span>
+        </div>
+        <div class="cr-addr">${c?.addr||''}</div>
+      </div>
+      <div class="cr-actions">
+        <button class="cr-act o" onclick="showPicker('为${v.name}准备','proposal')">准备</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  const nextHtml = nextAppointments.map(a => {
+    const c = C[a.name];
+    return `<div class="c-row" style="padding:7px 0;">
+      <div class="cr-a" style="width:30px;height:30px;font-size:11px;background:${c?.bg||'#6366f1'};">${c?.a||a.name[0]}</div>
+      <div class="cr-body">
+        <div class="cr-top">
+          <span class="cr-name" style="font-size:13px;">${a.name}</span>
+          <span class="cr-time" style="font-size:10px;background:#fffbeb;color:#d97706;">${a.date}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const canvas = document.getElementById('canvas');
+  if (appView === 'manager') {
+    // Manager view - team overview
+    const teamMembers = [
+      { name:'王小明', today:2, week:12, dealt:5 },
+      { name:'赵丽丽', today:1, week:8, dealt:3 },
+      { name:'孙浩', today:1, week:6, dealt:2 },
+    ];
+    canvas.innerHTML = `
+      <div class="insight-bar" style="background:linear-gradient(135deg,#1e40af,#3730a3);color:#fff;" onclick="openSubpage('spCoach');renderCoachPage();">
+        <span class="ib-avatar">👔</span>
+        <span class="ib-text">早上好李主管！<br><span style="font-size:13px;opacity:0.85;display:flex;align-items:center;gap:4px;margin-top:2px;">${coachApps.filter(a => (a.manager === '李国强' || a.applicant === '李国强') && a.status === 'pending').length}个陪访待审批 <span style="font-size:14px;">›</span></span></span>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 我的今日拜访 <span style="font-size:10px;font-weight:400;color:var(--text-light);margin-left:2px;">3位</span></div>
+        <div style="padding:0;">
+          <div class="c-row" style="cursor:pointer;" onclick="showVisit('张建国')">
+            <div class="cr-a" style="background:linear-gradient(135deg,#2563eb,#06b6d4);">张</div>
+            <div class="cr-body">
+              <div class="cr-top"><span class="cr-name">张建国</span><span class="cr-time" style="background:#eef2ff;color:var(--primary);">09:00-10:30</span><span class="badge badge-b" style="font-size:9px;">陪访</span></div>
+              <div class="cr-addr">朝阳区建国路88号 · 陪同王小明</div>
+            </div>
+            <div class="cr-actions" onclick="event.stopPropagation();">
+              <button class="cr-act p" onclick="showVisit('张建国')">拜访</button>
+              <button class="cr-act o" onclick="showPrepMenu('张建国')">筹备</button>
+            </div>
+          </div>
+          <div class="c-row" style="cursor:pointer;" onclick="showVisit('王德峰')">
+            <div class="cr-a" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">王</div>
+            <div class="cr-body">
+              <div class="cr-top"><span class="cr-name">王德峰</span><span class="cr-time" style="background:#eef2ff;color:var(--primary);">14:00-15:30</span></div>
+              <div class="cr-addr">西城区金融街</div>
+            </div>
+            <div class="cr-actions" onclick="event.stopPropagation();">
+              <button class="cr-act p" onclick="showVisit('王德峰')">拜访</button>
+              <button class="cr-act o" onclick="showPrepMenu('王德峰')">筹备</button>
+            </div>
+          </div>
+          <div class="c-row" style="cursor:pointer;" onclick="showVisit('陈秀英')">
+            <div class="cr-a" style="background:linear-gradient(135deg,#8b5cf6,#6366f1);">陈</div>
+            <div class="cr-body">
+              <div class="cr-top"><span class="cr-name">陈秀英</span><span class="cr-time" style="background:#eef2ff;color:var(--primary);">16:00-17:00</span></div>
+              <div class="cr-addr">朝阳区望京SOHO</div>
+            </div>
+            <div class="cr-actions" onclick="event.stopPropagation();">
+              <button class="cr-act p" onclick="showVisit('陈秀英')">拜访</button>
+              <button class="cr-act o" onclick="showPrepMenu('陈秀英')">筹备</button>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+          <button class="cr-act p" style="flex:1;text-align:center;padding:7px;" onclick="showSchedule()">📅 查看日程</button>
+          <button class="cr-act o" style="flex:1;text-align:center;padding:7px;" onclick="doRoute()">🗺️ 规划路线</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">👥 团队成员今日拜访</div>
+        ${teamMembers.map(m => `
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+            <div style="width:28px;height:28px;border-radius:6px;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:600;">${m.name[0]}</div>
+            <div style="flex:1;font-size:13px;font-weight:500;">${m.name}</div>
+            <span style="font-size:12px;color:var(--text-secondary);">今日 ${m.today}位</span>
+            <span style="font-size:11px;color:var(--text-light);">本周${m.week}访 · 成单${m.dealt}</span>
+          </div>`).join('')}
+      </div>
+      <div class="card">
+        <div class="card-title">📊 能效看板</div>
+        <div style="display:flex;gap:0;margin-bottom:10px;border-bottom:2px solid var(--border);">
+          <div id="perfTabPersonal" style="flex:1;text-align:center;padding:8px 0;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid var(--primary);color:var(--primary);margin-bottom:-2px;" onclick="performanceTab='personal';document.getElementById('perfTabPersonal').style.borderBottomColor='var(--primary)';document.getElementById('perfTabPersonal').style.color='var(--primary)';document.getElementById('perfTabTeam').style.borderBottomColor='transparent';document.getElementById('perfTabTeam').style.color='var(--text-light)';renderCanvas();">个人能效</div>
+          <div id="perfTabTeam" style="flex:1;text-align:center;padding:8px 0;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-light);margin-bottom:-2px;" onclick="performanceTab='team';document.getElementById('perfTabTeam').style.borderBottomColor='var(--primary)';document.getElementById('perfTabTeam').style.color='var(--primary)';document.getElementById('perfTabPersonal').style.borderBottomColor='transparent';document.getElementById('perfTabPersonal').style.color='var(--text-light)';renderCanvas();">团队能效</div>
+        </div>
+        <div id="perfPersonal">
+          <div style="display:flex;gap:16px;padding:8px 0;">
+            <div style="text-align:center;flex:1;"><div style="font-size:22px;font-weight:700;color:var(--text);">6</div><div style="font-size:11px;color:var(--text-light);">本周拜访</div></div>
+            <div style="text-align:center;flex:1;"><div style="font-size:22px;font-weight:700;color:var(--success);">3</div><div style="font-size:11px;color:var(--text-light);">本周成单</div></div>
+            <div style="text-align:center;flex:1;"><div style="font-size:22px;font-weight:700;color:#d97706;">5.2<span style="font-size:11px;">万</span></div><div style="font-size:11px;color:var(--text-light);">本周保费</div></div>
+          </div>
+        </div>
+        <div id="perfTeam" style="display:none;">
+          <div style="display:flex;gap:16px;padding:8px 0;">
+            <div style="text-align:center;flex:1;"><div style="font-size:22px;font-weight:700;color:var(--text);">26</div><div style="font-size:11px;color:var(--text-light);">本周拜访</div></div>
+            <div style="text-align:center;flex:1;"><div style="font-size:22px;font-weight:700;color:var(--success);">10</div><div style="font-size:11px;color:var(--text-light);">本周成单</div></div>
+            <div style="text-align:center;flex:1;"><div style="font-size:22px;font-weight:700;color:#d97706;">18.5<span style="font-size:11px;">万</span></div><div style="font-size:11px;color:var(--text-light);">本周保费</div></div>
+          </div>
+        </div>
+      </div>`;
+    // Show correct tab after re-render
+    if (performanceTab === 'team') {
+      document.getElementById('perfTabPersonal').style.borderBottomColor = 'transparent';
+      document.getElementById('perfTabPersonal').style.color = 'var(--text-light)';
+      document.getElementById('perfTabTeam').style.borderBottomColor = 'var(--primary)';
+      document.getElementById('perfTabTeam').style.color = 'var(--primary)';
+      document.getElementById('perfPersonal').style.display = 'none';
+      document.getElementById('perfTeam').style.display = '';
+    }
+    return;
+  }
+
+  canvas.innerHTML = `
+    <div class="insight-bar" onclick="openSubpage('spCoach');renderCoachPage();">
+      <span class="ib-avatar">👋</span>
+      <span class="ib-text">早上好小王！<br><span style="font-size:13px;opacity:0.85;display:flex;align-items:center;gap:4px;margin-top:2px;">${coachApps.filter(a => a.applicant === "王小明" && a.status === "pending").length}个陪访待审批 <span style="font-size:14px;">›</span></span></span>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span style="font-size:15px;">📋</span> 今日已约拜访 <span style="font-size:10px;font-weight:400;color:var(--text-light);margin-left:2px;">${visits.today.length}位</span></div>
+      <div style="padding:0;">
+        ${todayHtml || '<div style="text-align:center;padding:20px;color:var(--text-light);font-size:13px;">今日暂无已约拜访</div>'}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+        <button class="cr-act p" style="flex:1;text-align:center;padding:7px;" onclick="showSchedule()">📅 查看日程</button>
+        ${visits.today.length > 0 ? '<button class="cr-act o" style="flex:1;text-align:center;padding:7px;" onclick="doRoute()">🗺️ 规划路线</button>' : ''}
+      </div>
+    </div>
+
+    <div class="card" style="padding-bottom:20px;cursor:pointer;" onclick="showSchedule()">
+      <div class="card-title"><span style="font-size:15px;">📊</span> 本周效能</div>
+      <div style="display:flex;align-items:flex-end;height:52px;gap:6px;padding:0 2px;">${[38,28,43,20,33].map((h,i) => {
+          const maxH = 43;
+          const pct = h/maxH;
+          return `
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;">
+            <span style="font-size:9px;font-weight:600;color:var(--text-secondary);">${h}</span>
+            <div style="width:100%;max-width:28px;border-radius:4px 4px 0 0;background:var(--primary);height:${pct*44}px;opacity:${h === 43 ? 1 : 0.5};"></div>
+            <span style="font-size:10px;color:var(--text-light);font-weight:${h === 43 ? '600' : '400'};">${['一','二','三','四','五'][i]}</span>
+        </div>`;}).join('')}
+      </div>
+      <div style="display:flex;justify-content:space-around;margin-top:10px;padding:10px 4px 0;border-top:1px solid var(--border);">
+        <div style="text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--text);">12</div><div style="font-size:11px;color:var(--text-light);">拜访</div></div>
+        <div style="width:1px;background:var(--border);"></div>
+        <div style="text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--success);">5</div><div style="font-size:11px;color:var(--text-light);">成单</div></div>
+        <div style="width:1px;background:var(--border);"></div>
+        <div style="text-align:center;"><div style="font-size:18px;font-weight:700;color:#d97706;">8.2<span style="font-size:12px;">万</span></div><div style="font-size:11px;color:var(--text-light);">保费</div></div>
+      </div>
+    </div>`;
+}
+
+
+// ===== Prep Menu =====
+function showPrepMenu(name) {
+  const c = C[name]; if(!c) { showToast('客户信息不可用'); return; }
+  const prepItems = {
+    '张建国':[
+      { icon:'📄', label:'智能建议书', done:true, desc:'已生成重疾+家庭方案，可直接使用', action:'showProposal' },
+      { icon:'📦', label:'拜访物料', done:true, desc:'5项已就绪（建议书、生日贺卡等）', action:'showMaterials' },
+      { icon:'🎂', label:'客户妻子生日贺卡（7月20日）', done:true, desc:'已准备，可作为情感切入点', action:'' },
+      { icon:'🗺️', label:'路线规划', done:false, desc:'今日第2站，建议规划最优路线', action:'doRoute' },
+      { icon:'🤝', label:'陪访申请（高价值客户建议主管陪同）', done:false, desc:'该客户为重疾+年金复合需求，建议申请陪访', action:'doCoach' },
+    ],
+    '王德峰':[
+      { icon:'📄', label:'保单到期提醒函', done:true, desc:'已生成，含新旧产品对比', action:'showProposal' },
+      { icon:'📦', label:'拜访物料', done:true, desc:'4项已就绪', action:'showMaterials' },
+      { icon:'🗺️', label:'路线规划', done:false, desc:'今日第2站，建议规划路线', action:'doRoute' },
+    ],
+    '李美玲':[
+      { icon:'📄', label:'需求分析问卷', done:false, desc:'新客户，建议先做需求分析', action:'showProposal' },
+      { icon:'📦', label:'入门资料包', done:false, desc:'新客户物料待生成', action:'showMaterials' },
+      { icon:'🗺️', label:'路线规划', done:false, desc:'明日拜访，建议提前规划', action:'doRoute' },
+    ],
+    '赵志远':[
+      { icon:'📄', label:'重疾加保方案', done:false, desc:'客户原有20万保额不足，建议加保', action:'showProposal' },
+      { icon:'📦', label:'拜访物料', done:false, desc:'需准备加保方案对比表', action:'showMaterials' },
+      { icon:'🗺️', label:'路线规划', done:false, desc:'今日第1站，建议提前出发', action:'doRoute' },
+    ],
+    '陈秀英':[
+      { icon:'📄', label:'年金险方案', done:false, desc:'高净值客户，养老规划空白', action:'showProposal' },
+      { icon:'📦', label:'拜访物料', done:false, desc:'需准备年金产品资料', action:'showMaterials' },
+      { icon:'🗺️', label:'路线规划', done:false, desc:'建议安排上午拜访', action:'doRoute' },
+    ],
+    '刘伟强':[
+      { icon:'📄', label:'入门保障方案', done:false, desc:'年轻客户，建议百万医疗+意外险', action:'showProposal' },
+      { icon:'📦', label:'入门资料包', done:false, desc:'需准备简化版产品说明', action:'showMaterials' },
+      { icon:'🗺️', label:'路线规划', done:false, desc:'明日拜访，建议提前规划', action:'doRoute' },
+    ],
+    '周志明':[
+      { icon:'📄', label:'续保方案', done:false, desc:'3份保单即将到期', action:'showProposal' },
+      { icon:'📦', label:'拜访物料', done:false, desc:'需准备续保提醒函+新方案', action:'showMaterials' },
+      { icon:'🗺️', label:'路线规划', done:false, desc:'建议安排下午拜访', action:'doRoute' },
+    ],
+  };
+  const items = prepItems[name] || prepItems['张建国'];
+
+  pickerSub.textContent = '';
+  pickerList.innerHTML = `
+    <div class="sc" style="margin-bottom:6px;text-align:left;font-size:12px;background:var(--primary-bg);padding:10px 14px;">
+      🤖 <b>AI建议：</b>${name === '张建国' ? '重疾险续保+妻子生日情感切入，建议准备两套方案' : name === '王德峰' ? '多份保单即将到期，重点沟通续保和升级方案' : name === '赵志远' ? '客户重疾保额不足，建议重点沟通加保方案' : name === '陈秀英' ? '高净值客户养老规划空白，建议年金险切入' : name === '刘伟强' ? '年轻客户保障空白，建议从入门险种建立意识' : name === '周志明' ? '部分保单即将到期，建议提前沟通续保' : '新客户保障意识较强，从需求分析入手建立信任'}
+    </div>
+    ${items.map(item => {
+      const clickHandler = item.done ? '' : item.action ? `hidePicker();${item.action}('${name}')` : '';
+      return `
+    <div class="picker-option" style="${clickHandler ? '' : 'cursor:default;'}" ${clickHandler ? `onclick="${clickHandler}"` : ''}>
+      <div style="width:36px;height:36px;border-radius:10px;background:${item.done ? '#ecfdf5' : 'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:18px;">${item.icon}</div>
+      <div class="po-info"><div class="po-n">${item.label} <span style="font-size:11px;color:${item.done ? 'var(--success)' : 'var(--danger)'};">${item.done ? '✅ 已准备' : '⏳ 建议准备'}</span></div><div class="po-d">${item.desc}</div></div>
+    </div>`;}).join('')}
+    <div style="display:flex;gap:8px;padding:8px 0 4px;">
+      <div class="sp-btn p" style="flex:1;" onclick="hidePicker();showProposal('${name}')">📄 建议书</div>
+      <div class="sp-btn o" style="flex:1;" onclick="hidePicker();showMaterials('${name}')">📦 物料</div>
+    </div>`;
+  pickerOverlay.classList.add('show');
+}
+
+// ===== Visit Recording =====
+function showVisit(name) {
+  const c = C[name]; if(!c) { showToast('客户信息不可用'); return; }
+  // If already recording this customer, resume; otherwise fresh start
+  if (isRecording && ongoingVisit === name) {
+    // resume existing recording
+  } else {
+    if (isRecording && ongoingVisit !== name) {
+      // switched to different customer, stop previous recording
+      isRecording = false;
+    }
+    ongoingVisit = name;
+    isRecording = false;
+    visitTranscript = [];
+    coachNotes = [];
+  }
+  document.getElementById('spVisitTitle').textContent = `拜访${name}`;
+  renderVisit();
+  openSubpage('spVisit');
+}
+
+function renderVisit() {
+  const name = ongoingVisit;
+  const c = C[name];
+  if (!c) return;
+
+  if (!isRecording) {
+    // Pre-visit: customer info, prep checklist, start button
+    const coach = coachApps.find(a => a.customer === name && a.status === 'approved');
+    // Role-aware display: who's viewing and what's their role
+    const viewerIsAgent = appView === 'member'; // member = agent/applicant
+    const isViewerLead = coach ? ((viewerIsAgent && coach.leadRole === 'applicant') || (!viewerIsAgent && coach.leadRole === 'manager')) : false;
+    const partnerName = coach ? (viewerIsAgent ? coach.manager : coach.applicant) : '';
+    const prepDone = (name === '张建国') ? 2 : (name === '王德峰') ? 2 : 0;
+    const prepTotal = (name === '张建国') ? 3 : (name === '王德峰') ? 3 : 2;
+
+    document.getElementById('spVisitBody').innerHTML = `
+      <div class="detail-header" style="padding:18px 20px 20px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:20px;font-weight:700;">${name}</div>
+            <div style="font-size:12px;opacity:0.8;margin-top:2px;">${c.addr}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:12px;opacity:0.8;">${c.age} · ${c.tag}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 拜访前准备</div>
+        <div style="font-size:13px;line-height:1.8;">
+          <div style="padding:4px 0;">✅ 建议书：${prepDone > 0 ? '已就绪' : '建议准备'}</div>
+          <div style="padding:4px 0;">✅ 物料：${prepDone > 1 ? '已就绪' : '建议准备'}</div>
+          ${coach ? `<div style="padding:4px 0;">🤝 陪访分工：` + (isViewerLead ? `您主讲，${partnerName}负责录音和记录` : `${partnerName}主讲，您负责录音和记录`) + `</div>` : ''}
+          <div style="padding:4px 0;">📌 沟通要点：${name === '张建国' ? '重疾续保方案讲解 → 客户妻子生日话题切入 → 推动签单' : name === '王德峰' ? '保单到期提醒 → 新旧产品对比 → 升级方案推荐' : '需求分析 → 保障概念建立 → 初步方案介绍'}</div>
+        </div>
+      </div>
+
+      <div class="card" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+        <div class="card-title" style="color:var(--success);">🎯 AI建议</div>
+        <div style="font-size:13px;line-height:1.7;">${c.note}</div>
+      </div>
+
+      ${!coach || !isViewerLead
+        ? '<button class="sp-btn p" style="width:100%;margin-top:8px;padding:16px;font-size:16px;" onclick="startRecording()">🎤 开始录音 · AI实时转录</button>'
+        : '<div style="text-align:center;padding:12px;background:var(--primary-bg);border-radius:var(--radius-sm);font-size:13px;color:var(--text-secondary);">🎤 ' + partnerName + '正在为您录音和记录，您可专注于客户沟通</div>'}
+    `;
+  } else {
+    // Recording in progress
+    const coach = coachApps.find(a => a.customer === name && a.status === "approved");
+    const viewerIsAgent = appView === 'member';
+    const isViewerLead = coach ? ((viewerIsAgent && coach.leadRole === 'applicant') || (!viewerIsAgent && coach.leadRole === 'manager')) : false;
+    const partnerName = coach ? (viewerIsAgent ? coach.manager : coach.applicant) : '';
+    const mins = 1;
+    const secs = 23;
+
+    document.getElementById('spVisitBody').innerHTML = `
+      <div class="rec-bar">
+        <span class="rec-dot"></span>
+        <span style="font-size:14px;font-weight:600;">录音中 · ${name}</span>
+        <span class="rec-time">${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}</span>
+        <div class="rec-wave">
+          ${Array(10).fill(0).map((_,i) => `<span style="animation-delay:${i*0.1}s"></span>`).join('')}
+        </div>
+      </div>
+
+      <div class="card" style="padding:10px 14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span class="card-title" style="margin:0;">💬 对话转录</span>
+          <span style="font-size:11px;color:var(--text-light);">${visitTranscript.length}条 · AI实时识别</span>
+        </div>
+        <div style="max-height:220px;overflow-y:auto;">
+          ${visitTranscript.length === 0
+            ? '<div style="text-align:center;padding:20px;color:var(--text-light);font-size:13px;">🎤 等待对话开始...</div>'
+            : visitTranscript.map(t => `
+            <div class="tl-bubble ${t.speaker === 'agent' ? 'tb-agent' : 'tb-customer'}">
+              <div class="tb-avatar" style="background:${t.speaker === 'agent' ? 'var(--primary)' : 'var(--success)'}">${t.speaker === 'agent' ? '王' : name[0]}</div>
+              <div>
+                <div class="tb-content">${t.text}</div>
+                <div class="tb-time">${t.time}</div>
+              </div>
+            </div>`).join('')}
+          <div style="text-align:center;padding:6px 0;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--primary);animation:pulse 1s infinite;"></span></div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:10px 14px;background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1px solid #fde68a;">
+        <div class="card-title" style="margin-bottom:6px;color:#d97706;">🧠 AI实时分析</div>
+        <div style="font-size:13px;line-height:1.7;">
+          <div style="padding:3px 0;display:flex;gap:6px;align-items:start;">
+            <span style="color:var(--accent);">📌</span>
+            <span>客户对重疾保障有明确需求</span>
+          </div>
+          <div style="padding:3px 0;display:flex;gap:6px;align-items:start;">
+            <span style="color:var(--accent);">📌</span>
+            <span>${name === '张建国' ? '妻子生日可作为情感切入点' : name === '王德峰' ? '客户关注新旧产品差异' : '需要加强重疾基础概念讲解'}</span>
+          </div>
+          <div style="padding:3px 0;display:flex;gap:6px;align-items:start;">
+            <span style="color:var(--accent);">📌</span>
+            <span>客户认可度较高，可适时推进</span>
+          </div>
+        </div>
+      </div>
+
+      ${coach && !isViewerLead ? `
+      <div class="card" style="padding:10px 14px;background:#f8fafc;border:1px dashed var(--primary);">
+        <div class="card-title" style="margin-bottom:4px;font-size:12px;">📝 实时记录 <span style="font-size:10px;font-weight:400;color:var(--text-light);">您负责记录，${partnerName}主讲</span></div>
+        <div style="display:flex;gap:4px;">
+          <input id="coachLiveNote" placeholder="输入实时观察记录..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
+          <button class="cr-act p" style="padding:5px 10px;font-size:11px;" onclick="addCoachNote()">记录</button>
+        </div>
+        <div id="coachNoteList" style="margin-top:4px;"></div>
+      </div>` : ''}
+
+      ${!coach || !isViewerLead
+        ? '<button class="sp-btn p" style="width:100%;margin-top:4px;background:var(--danger);box-shadow:0 2px 8px rgba(239,68,68,0.3);" onclick="endVisit()">⏹️ 结束录音 · AI自动分析</button>'
+        : '<div style="text-align:center;padding:10px;font-size:12px;color:var(--text-light);">🎤 ' + partnerName + '正在录音和记录，结束后自动同步</div>'}
+    `;
+  }
+}
+
+function startRecording() {
+  isRecording = true;
+  // Simulate incremental transcription
+  visitTranscript = [
+    { speaker:'agent', text:'王总您好！感谢您抽出时间见面。', time:'00:00' },
+    { speaker:'customer', text:'你好你好，请坐。', time:'00:03' },
+    { speaker:'agent', text:'这次我整理了一套具体的方案给您看看。', time:'00:08' },
+    { speaker:'customer', text:'好，我看看。最近确实在考虑这个事。', time:'00:15' },
+    { speaker:'agent', text:'这个方案保额50万，涵盖120种重疾，年缴保费8650元。', time:'00:22' },
+  ];
+  renderVisit();
+  showToast('🎤 开始录音，AI实时转录中...');
+}
+
+function addCoachNote() {
+  var input = document.getElementById('coachLiveNote');
+  if (!input || !input.value.trim()) return;
+  var now = new Date();
+  var time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  coachNotes.push({ text: input.value.trim(), time: time, speaker: 'coach' });
+  input.value = '';
+  // Refresh note list
+  var list = document.getElementById('coachNoteList');
+  if (list) {
+    list.innerHTML = coachNotes.map(function(n) {
+      return '<div style="padding:3px 0;display:flex;gap:4px;font-size:11px;border-bottom:1px solid var(--border);"><span style="color:var(--text-light);flex-shrink:0;">' + n.time + '</span><span style="color:var(--primary);font-weight:500;">👀 ' + n.text + '</span></div>';
+    }).join('');
+  }
+  showToast('📝 记录已添加');
+}
+
+function backFromVisit() {
+  closeSubpage('spVisit');
+}
+
+function endVisit() {
+  const name = ongoingVisit;
+  if (!name) { closeSubpage('spVisit'); return; }
+  // If coach visit, save summary for both parties
+  const coach = coachApps.find(a => a.customer === name && a.status === 'approved');
+  if (coach) {
+    // Remove old summary for this coach visit if exists
+    coachSummaries = coachSummaries.filter(s => s.coachId !== coach.id);
+    coachSummaries.push({
+      customer: name,
+      applicant: coach.applicant,
+      manager: coach.manager,
+      leadRole: coach.leadRole,
+      coachId: coach.id,
+      time: new Date().toLocaleString('zh-CN'),
+    });
+  }
+  ongoingVisit = null;
+  isRecording = false;
+  coachNotes = [];
+  closeSubpage('spVisit');
+  showToast(`📊 ${name}的拜访记录分析中...`);
+  setTimeout(() => {
+    showSummary(name);
+    renderCanvas();
+  }, 600);
+}
+
+// ===== Subpage Content =====
+function showProposal(name) {
+  const c = C[name]; if(!c) { showToast('客户信息不可用'); return; }
+  document.getElementById('spProposalBody').innerHTML = `
+    <div class="detail-header">
+      <div class="dh-name">📄 ${name} · 保障方案</div>
+      <div class="dh-tags"><span>${c.age}</span><span>${c.fam}</span><span>年收入${c.income}</span></div>
+      <div class="dh-stats"><div><div class="num">${c.prem}</div><div class="lbl">年保费</div></div><div><div class="num">${c.policies}</div><div class="lbl">已有保单</div></div><div><div class="num">${c.score}</div><div class="lbl">评分</div></div></div>
+    </div>
+    <div class="sc"><div class="sc-title">🔍 AI 需求诊断</div><div style="font-size:13px;line-height:1.7;">${name}${c.gap}。根据家庭结构和收入状况，建议优先配置重疾保障，保额建议50万以上。${name === '张建国' ? '客户妻子生日临近，可同步考虑女性重疾保障方案。' : ''}</div></div>
+    <div class="sc">
+      <div class="sc-title">🏆 推荐方案：长城康健人生重疾险（升级版）</div>
+      <div style="text-align:center;padding:12px 0;"><span style="font-size:36px;font-weight:800;color:var(--primary);">50万</span> <span style="font-size:13px;color:var(--text-secondary);"> 保额</span></div>
+      <table class="prop-table">
+        <tr><th>项目</th><th>内容</th></tr>
+        <tr><td>产品名称</td><td>长城康健人生重疾险（升级版）</td></tr>
+        <tr><td>保障期限</td><td>至70周岁 / 终身</td></tr>
+        <tr><td>缴费期限</td><td>20年 / 30年</td></tr>
+        <tr><td>年缴保费</td><td style="font-weight:600;color:var(--primary);">8,650元（20年缴）</td></tr>
+        <tr><td>保障范围</td><td>120种重疾 + 40种轻症 + 20种中症</td></tr>
+        <tr><td>轻症豁免</td><td>确诊轻症，后续保费豁免</td></tr>
+      </table>
+    </div>
+    <div class="sc" style="background:#fef3c7;border:1px solid #fde68a;"><div style="font-size:12px;line-height:1.6;">🎯 <b>AI促成建议：</b><br>${c.note}<br><br>建议准备两套方案（50万/30万）给客户选择权，提高成交率。</div></div>
+    <div class="sp-actions">
+      <div class="sp-btn p" onclick="showToast('📤 方案已发送给${name}（演示）')">📤 发送给客户</div>
+      <div class="sp-btn o" onclick="showToast('📥 PDF导出中（演示）')">📥 导出PDF</div>
+    </div>
+  `;
+  openSubpage('spProposal');
+}
+
+function showMaterials(name) {
+  const c = C[name]; if(!c) { showToast('客户信息不可用'); return; }
+  const items = {
+    '张建国':[
+      {icon:'📄',name:'重疾险续保建议书',st:'✅ 已生成',sc:'var(--success)'},
+      {icon:'🎂',name:'客户妻子生日贺卡（7月20日）',st:'✅ 已生成',sc:'var(--success)'},
+      {icon:'🛡️',name:'女性重疾险产品单页',st:'✅ 已生成',sc:'var(--success)'},
+      {icon:'📊',name:'家庭保障缺口分析报告',st:'⏳ 生成中',sc:'var(--accent)'},
+      {icon:'📋',name:'投保申请书（预填）',st:'🖨️ 待打印',sc:'var(--primary)'},
+    ],
+    '王德峰':[
+      {icon:'📄',name:'保单到期提醒函',st:'✅ 已生成',sc:'var(--success)'},
+      {icon:'📊',name:'新旧产品对比表',st:'✅ 已生成',sc:'var(--success)'},
+      {icon:'🛡️',name:'升级版产品说明书',st:'✅ 已生成',sc:'var(--success)'},
+      {icon:'📋',name:'投保申请书（预填）',st:'🖨️ 待打印',sc:'var(--primary)'},
+    ],
+    '李美玲':[
+      {icon:'📄',name:'需求分析问卷',st:'✅ 已生成',sc:'var(--success)'},
+      {icon:'📊',name:'保障缺口分析报告',st:'✅ 已生成',sc:'var(--success)'},
+      {icon:'🛡️',name:'入门级重疾险产品单页',st:'✅ 已生成',sc:'var(--success)'},
+      {icon:'🎁',name:'新客户专属礼遇说明',st:'🖨️ 待打印',sc:'var(--primary)'},
+    ],
+    '赵志远':[
+      {icon:'📄',name:'重疾加保建议书',st:'✅ 已生成',sc:'var(--success)'},
+      {icon:'📊',name:'已有保障分析报告',st:'✅ 已生成',sc:'var(--success)'},
+      {icon:'🛡️',name:'升级版重疾产品单页',st:'✅ 已生成',sc:'var(--success)'},
+      {icon:'📋',name:'投保申请书（预填）',st:'🖨️ 待打印',sc:'var(--primary)'},
+    ],
+    '陈秀英':[
+      {icon:'📄',name:'年金险方案建议书',st:'✅ 已生成',sc:'var(--success)'},
+      {icon:'📊',name:'养老规划分析报告',st:'✅ 已生成',sc:'var(--success)'},
+      {icon:'🛡️',name:'养老年金产品说明书',st:'✅ 已生成',sc:'var(--success)'},
+      {icon:'🎁',name:'高客专属礼遇手册',st:'🖨️ 待打印',sc:'var(--primary)'},
+    ],
+    '刘伟强':[
+      {icon:'📄',name:'入门保障方案建议书',st:'⏳ 生成中',sc:'var(--accent)'},
+      {icon:'📊',name:'保障需求分析问卷',st:'✅ 已生成',sc:'var(--success)'},
+      {icon:'🛡️',name:'百万医疗+意外险产品单页',st:'✅ 已生成',sc:'var(--success)'},
+    ],
+    '周志明':[
+      {icon:'📄',name:'续保提醒函',st:'✅ 已生成',sc:'var(--success)'},
+      {icon:'📊',name:'新旧续保方案对比表',st:'⏳ 生成中',sc:'var(--accent)'},
+      {icon:'🛡️',name:'升级版产品说明书',st:'✅ 已生成',sc:'var(--success)'},
+      {icon:'📋',name:'投保申请书（预填）',st:'🖨️ 待打印',sc:'var(--primary)'},
+    ],
+  };
+  const list = items[name] || items['张建国'];
+  document.getElementById('spMaterialsBody').innerHTML = `
+    <div style="padding:16px 0 12px;"><div style="font-size:18px;font-weight:700;">📦 ${name} · 拜访物料</div><div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">AI基于客户画像和沟通目标自动识别</div></div>
+    <div class="sc" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);">
+      <div style="display:flex;gap:10px;align-items:center;"><span style="font-size:24px;">🤖</span><div style="font-size:12px;line-height:1.6;"><b>AI分析：</b>本次拜访核心议题为${name === '张建国' ? '重疾续保及家庭保障升级' : name === '王德峰' ? '保单到期提醒及新产品推荐' : name === '赵志远' ? '重疾加保及保障升级' : name === '陈秀英' ? '养老规划及年金配置' : name === '刘伟强' ? '入门保障及保险意识建立' : name === '周志明' ? '保单续保及方案升级' : '新客户需求挖掘及保障意识建立'}。建议准备以下物料——</div></div>
+    </div>
+    ${list.map((item, idx) => `
+      <div class="sc">
+        <div style="display:flex;gap:12px;align-items:center;">
+          <div style="width:40px;height:40px;background:var(--primary-bg);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;">${item.icon}</div>
+          <div style="flex:1;"><div style="font-size:14px;font-weight:500;">${item.name}</div></div>
+          <span style="font-size:12px;color:${item.sc};font-weight:500;">${item.st}</span>
+        </div>
+        ${item.st === '⏳ 生成中' ? '<div style="margin-top:8px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;"><div style="width:60%;height:100%;background:var(--accent);border-radius:2px;animation:pulse 2s infinite;"></div></div>' : ''}
+        ${item.st === '🖨️ 待打印' ? '<div style="margin-top:6px;"><div class="sp-btn o" style="padding:4px 10px;font-size:11px;display:inline-block;width:auto;" onclick="showToast(\'🖨️ 已发送打印机（演示）\')">🖨️ 打印</div></div>' : ''}
+      </div>
+    `).join('')}
+    <div style="text-align:center;font-size:12px;color:var(--text-light);padding:4px;">${list.filter(i=>i.st==='✅ 已生成').length}项已就绪 · ${list.filter(i=>i.st==='⏳ 生成中').length}项生成中 · ${list.filter(i=>i.st==='🖨️ 待打印').length}项待打印</div>
+    <div class="sp-actions">
+      <div class="sp-btn p" onclick="showToast('📦 ${name}物料已打包（演示）')">📦 一键打包</div>
+      <div class="sp-btn o" onclick="showToast('🖨️ 已发送打印机（演示）')">🖨️ 打印全部</div>
+    </div>
+  `;
+  openSubpage('spMaterials');
+}
+
+function showSummary(name) {
+  const c = C[name]; if(!c) { showToast('客户信息不可用'); return; }
+  _summaryCustomer = name;
+  const isZhang = name === '张建国';
+  initCustomerTodos(name);
+  document.getElementById('spSummaryBody').innerHTML = `
+    <div style="text-align:center;padding:20px 0 12px;">
+      <div style="font-size:40px;">✅</div>
+      <div style="font-size:18px;font-weight:700;margin-top:8px;">${name} · 拜访已结束</div>
+      <div style="font-size:13px;color:var(--text-secondary);">AI 已自动生成拜访记录</div>
+    </div>
+    <div class="sc">
+      <div class="sc-title">📋 拜访摘要</div>
+      <div style="font-size:13px;line-height:1.8;">
+        <b>客户：</b>${name}<br>
+        <b>地址：</b>${c.addr}<br>
+        <b>沟通主题：</b>${isZhang ? '重疾续保及家庭保障升级' : name === '王德峰' ? '保单到期提醒及新产品介绍' : '需求挖掘及保障规划'}<br>
+        <b>核心内容：</b>${isZhang ? '客户对续保费率表示关注，已澄清不会涨价。对升级版重疾+轻症保障感兴趣。客户妻子即将生日，有女性重疾险潜在需求。' : name === '王德峰' ? '客户多份保单即将到期，对新产品升级版有兴趣。建议重点跟进续保并推荐综合方案。' : '新客户保险意识较强，目前只有基本医疗险。对重疾保障方案感兴趣，需后续跟进详细方案。'}
+      </div>
+    </div>
+    <div class="sc">
+      <div class="sc-title">🎙️ AI对话分析</div>
+      <div style="font-size:13px;line-height:1.9;">
+        <div style="display:flex;gap:8px;padding:2px 0;"><span style="color:var(--text-light);">⏱️</span><span>对话时长 <b>${visitTranscript.length > 0 ? '约3分钟' : '—'}</b> · 识别到 <b>${visitTranscript.length > 0 ? '2个' : '—'}</b> 关键话题</span></div>
+        <div style="display:flex;gap:8px;padding:2px 0;"><span style="color:var(--primary);">💡</span><span>客户主动询问方案细节，<b>签单意向较强</b></span></div>
+        <div style="display:flex;gap:8px;padding:2px 0;"><span style="color:var(--accent);">📌</span><span>${isZhang ? '妻子生日（7月20日）可作为情感切入点，建议同步推荐女性重疾险' : name === '王德峰' ? '客户对比新旧产品差异，重点突出升级优势' : '客户重疾认知较弱，需从基础概念建立认知'}</span></div>
+        <div style="display:flex;gap:8px;padding:2px 0;"><span style="color:var(--success);">📊</span><span>客户情绪：<b style="color:var(--success);">积极 😊</b> · 配合度 <b>90%</b></span></div>
+      </div>
+    </div>
+    <div class="sc">
+      <div class="sc-title">📌 客户需求识别</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        <span class="badge badge-b" style="padding:4px 12px;font-size:12px;">${isZhang ? '重疾续保' : name === '王德峰' ? '保单续期' : '新客拓展'}</span>
+        <span class="badge badge-a" style="padding:4px 12px;font-size:12px;">${isZhang ? '配偶保障' : name === '王德峰' ? '产品升级' : '重疾启蒙'}</span>
+        <span class="badge badge-g" style="padding:4px 12px;font-size:12px;">${isZhang ? '生日礼遇' : name === '王德峰' ? '家庭方案' : '建立信任'}</span>
+      </div>
+    </div>
+    <div class="sc">
+      <div class="sc-title">📊 客户意向评估</div>
+      <div style="display:flex;gap:16px;align-items:center;">
+        <div style="text-align:center;"><div style="font-size:32px;font-weight:700;color:var(--success);">B+</div><div style="font-size:11px;color:var(--text-light);">意向等级</div></div>
+        <div style="flex:1;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;"><span>签单概率</span><span>75%</span></div>
+          <div style="height:6px;background:var(--border);border-radius:3px;margin:4px 0 8px;"><div style="width:75%;height:100%;background:var(--success);border-radius:3px;"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;"><span>预计保费</span><span>${isZhang ? '1.2万-2万' : name === '王德峰' ? '2万-3万' : '5千-1万'}/年</span></div>
+        </div>
+      </div>
+    </div>
+      <div class="sc" style="border-left:3px solid var(--accent);">
+        <div class="sc-title" style="display:flex;align-items:center;gap:6px;">
+          <span>⏰ 跟进待办</span>
+          <span style="font-size:10px;font-weight:400;color:var(--text-light);">点击文字可编辑 · 点击方框切换状态</span>
+        </div>
+        <div id="summaryTodoList">
+          ${renderTodoHtml(getCustomerTodos(name), false)}
+        </div>
+      </div>
+    <div style="margin-top:8px;">
+      <div class="sp-btn p" style="width:100%;margin-bottom:8px;" onclick="closeSubpage('spSummary');showNextVisitPicker('${name}')">📅 预约下次拜访时间</div>
+    </div>
+
+  `;
+  openSubpage('spSummary');
+}
+
+function showCoachSummary(name) {
+  const c = C[name]; if(!c) { showToast('客户信息不可用'); return; }
+  const isZhang = name === '张建国';
+  const sm = coachSummaries.find(s => s.customer === name);
+  document.getElementById('spSummaryBody').innerHTML = `
+    <div style="text-align:center;padding:20px 0 12px;">
+      <div style="font-size:40px;">✅</div>
+      <div style="font-size:18px;font-weight:700;margin-top:8px;">${name} · 陪访已结束</div>
+      <div style="font-size:13px;color:var(--text-secondary);">AI 已自动生成拜访记录 · ${sm ? '主管视角' : ''}</div>
+    </div>
+    <div class="sc">
+      <div class="sc-title">📋 拜访摘要</div>
+      <div style="font-size:13px;line-height:1.8;">
+        <b>客户：</b>${name}<br>
+        <b>地址：</b>${c.addr}<br>
+        <b>沟通主题：</b>${isZhang ? '重疾续保及家庭保障升级' : name === '王德峰' ? '保单到期提醒及新产品介绍' : '需求挖掘及保障规划'}<br>
+        <b>核心内容：</b>${isZhang ? '客户对续保费率表示关注，已澄清不会涨价。对升级版重疾+轻症保障感兴趣。客户妻子即将生日，有女性重疾险潜在需求。' : name === '王德峰' ? '客户多份保单即将到期，对新产品升级版有兴趣。建议重点跟进续保并推荐综合方案。' : '新客户保险意识较强，目前只有基本医疗险。对重疾保障方案感兴趣，需后续跟进详细方案。'}
+      </div>
+    </div>
+    <div class="sc">
+      <div class="sc-title">🎙️ AI对话分析</div>
+      <div style="font-size:13px;line-height:1.9;">
+        <div style="display:flex;gap:8px;padding:2px 0;"><span style="color:var(--text-light);">⏱️</span><span>对话时长 <b>${visitTranscript.length > 0 ? '约3分钟' : '—'}</b> · 识别到 <b>${visitTranscript.length > 0 ? '2个' : '—'}</b> 关键话题</span></div>
+        <div style="display:flex;gap:8px;padding:2px 0;"><span style="color:var(--primary);">💡</span><span>客户主动询问方案细节，<b>签单意向较强</b></span></div>
+        <div style="display:flex;gap:8px;padding:2px 0;"><span style="color:var(--accent);">📌</span><span>${isZhang ? '妻子生日（7月20日）可作为情感切入点，建议同步推荐女性重疾险' : name === '王德峰' ? '客户对比新旧产品差异，重点突出升级优势' : '客户重疾认知较弱，需从基础概念建立认知'}</span></div>
+        <div style="display:flex;gap:8px;padding:2px 0;"><span style="color:var(--success);">📊</span><span>客户情绪：<b style="color:var(--success);">积极 😊</b> · 配合度 <b>90%</b></span></div>
+      </div>
+    </div>
+    <div class="sc">
+      <div class="sc-title">📌 客户需求识别</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        <span class="badge badge-b" style="padding:4px 12px;font-size:12px;">${isZhang ? '重疾续保' : name === '王德峰' ? '保单续期' : '新客拓展'}</span>
+        <span class="badge badge-a" style="padding:4px 12px;font-size:12px;">${isZhang ? '配偶保障' : name === '王德峰' ? '产品升级' : '重疾启蒙'}</span>
+        <span class="badge badge-g" style="padding:4px 12px;font-size:12px;">${isZhang ? '生日礼遇' : name === '王德峰' ? '家庭方案' : '建立信任'}</span>
+      </div>
+    </div>
+    <div class="sc">
+      <div class="sc-title">📊 客户意向评估</div>
+      <div style="display:flex;gap:16px;align-items:center;">
+        <div style="text-align:center;"><div style="font-size:32px;font-weight:700;color:var(--success);">B+</div><div style="font-size:11px;color:var(--text-light);">意向等级</div></div>
+        <div style="flex:1;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;"><span>签单概率</span><span>75%</span></div>
+          <div style="height:6px;background:var(--border);border-radius:3px;margin:4px 0 8px;"><div style="width:75%;height:100%;background:var(--success);border-radius:3px;"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;"><span>预计保费</span><span>${isZhang ? '1.2万-2万' : name === '王德峰' ? '2万-3万' : '5千-1万'}/年</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:12px;padding:10px;background:var(--primary-bg);border-radius:var(--radius-sm);text-align:center;font-size:12px;color:var(--text-secondary);">
+      跟进待办已同步至 ${sm ? sm.applicant || '申请人' : '代理人'} 的日程
+    </div>
+  `;
+  openSubpage('spSummary');
+}
+
+function moveVisit(idx, dir) {
+  var newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= visits.today.length) return;
+  var tmp = visits.today[idx];
+  visits.today[idx] = visits.today[newIdx];
+  visits.today[newIdx] = tmp;
+  recalculateRoute();
+  renderCanvas();
+}
+
+function getTravelTime(fromName, toName) {
+  var areas = {
+    '公司': { coord: [0, 0] },
+    '张建国': { coord: [3, 2] },
+    '王德峰': { coord: [1, -1] },
+    '陈秀英': { coord: [0.5, 0.5] },
+    '刘伟强': { coord: [2, 3] },
+    '李雪梅': { coord: [-1, 0] },
+    '赵志远': { coord: [4, 1.5] },
+    '周志明': { coord: [3, 2.5] }
+  };
+  var f = areas[fromName] || areas['公司'];
+  var t = areas[toName] || areas['公司'];
+  var km = Math.max(1, Math.round(Math.sqrt(Math.pow(f.coord[0]-t.coord[0], 2) + Math.pow(f.coord[1]-t.coord[1], 2)) * 2));
+  var min = km * 3 + 2;
+  return { km: km, min: min };
+}
+
+function recalculateRoute() {
+  if (visits.today.length === 0) return;
+  var currentTime = 9 * 60;
+  visits.today.forEach(function(v, i) {
+    var startMin = currentTime;
+    var endMin = currentTime + 90;
+    v.time = String(Math.floor(startMin/60)).padStart(2,'0') + ':' + String(startMin%60).padStart(2,'0') + '-' + String(Math.floor(endMin/60)).padStart(2,'0') + ':' + String(endMin%60).padStart(2,'0');
+    var prevName = i === 0 ? '公司' : visits.today[i-1].name;
+    var travel = getTravelTime(prevName, v.name);
+    currentTime = endMin + travel.min;
+  });
+}
+
+var routeConfirmed = false;
+
+function doRoute() {
+  recalculateRoute();
+  if (visits.today.length === 0) { showToast('今日暂无拜访安排'); return; }
+  var totalKm = 0, totalMin = 0;
+  var colors = ['var(--primary)','var(--accent)','var(--success)','#f43f5e','#8b5cf6','#14b8a6','#f97316','#6366f1'];
+
+  // Fixed positions per customer (name stays with position regardless of visit order)
+  var fixedPositions = {
+    '张建国': {left:'38%',top:'24%',c:'var(--primary)'},
+    '王德峰': {left:'68%',top:'48%',c:'var(--accent)'},
+    '李雪梅': {left:'48%',top:'70%',c:'var(--success)'},
+    '陈秀英': {left:'25%',top:'60%',c:'#f43f5e'},
+    '刘伟强': {left:'72%',top:'18%',c:'#8b5cf6'},
+    '赵志远': {left:'20%',top:'42%',c:'#14b8a6'},
+    '周志明': {left:'58%',top:'55%',c:'#f97316'}
+  };
+
+  var mapHtml = '';
+  mapHtml += '<div style="position:absolute;left:14%;top:22%;width:26px;height:26px;border-radius:50% 50% 50% 0;background:#94a3b8;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.3);"><span style="transform:rotate(45deg);font-size:10px;">🏢</span></div>';
+  mapHtml += '<div style="position:absolute;left:10%;top:40%;font-size:8px;color:#475569;font-weight:500;background:rgba(255,255,255,0.9);padding:1px 5px;border-radius:3px;white-space:nowrap;">公司</div>';
+
+  // Map markers by fixed position: order number changes, name stays
+  for (var i = 0; i < visits.today.length; i++) {
+    var v = visits.today[i];
+    var fp = fixedPositions[v.name] || {left:'30%',top:'50%',c:'#6366f1'};
+    var num = i + 1;
+    mapHtml += '<div style="position:absolute;left:' + fp.left + ';top:' + fp.top + ';width:26px;height:26px;border-radius:50% 50% 50% 0;background:' + fp.c + ';transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.3);"><span style="transform:rotate(45deg);font-size:10px;color:#fff;font-weight:600;">' + num + '</span></div>';
+    var lt = 'calc(' + fp.top + ' - 14px)';
+    mapHtml += '<div style="position:absolute;left:' + fp.left + ';top:' + lt + ';font-size:8px;color:' + fp.c + ';font-weight:600;background:rgba(255,255,255,0.9);padding:1px 5px;border-radius:3px;white-space:nowrap;">' + v.name + '</div>';
+  }
+  var routeHtml = '';
+  routeHtml += '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;"><span style="width:20px;height:20px;border-radius:50%;background:#94a3b8;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;">\ud83c\udfe2</span><span>公司（出发）</span></div>';
+
+  for (var i = 0; i < visits.today.length; i++) {
+    var v = visits.today[i];
+    var prevName = i === 0 ? '公司' : visits.today[i-1].name;
+    var travel = getTravelTime(prevName, v.name);
+    totalKm += travel.km;
+    totalMin += travel.min;
+    var color = (fixedPositions[v.name] || {}).c || colors[i % colors.length];
+    var moveHide = routeConfirmed ? 'display:none;' : '';
+    
+    var upDisabled = i === 0 ? 'style="opacity:0.3;pointer-events:none;"' : '';
+    var dnDisabled = i === visits.today.length-1 ? 'style="opacity:0.3;pointer-events:none;"' : '';
+    routeHtml += '<div style="color:var(--text-light);font-size:10px;padding-left:28px;">↓ ' + travel.km + 'km · 约' + travel.min + 'min</div>';
+    routeHtml += '<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">' +
+      '<div style="display:flex;flex-direction:column;align-items:center;gap:1px;flex-shrink:0;width:18px;' + moveHide + '">' +
+        '<button class="cr-move" onclick="moveVisitFromRoute(' + i + ',-1)" ' + upDisabled + '>▲</button>' +
+        '<span style="font-size:9px;color:' + color + ';font-weight:600;">' + (i+1) + '</span>' +
+        '<button class="cr-move" onclick="moveVisitFromRoute(' + i + ',1)" ' + dnDisabled + '>▼</button>' +
+      '</div>' +
+      '<span style="width:20px;height:20px;border-radius:50%;background:' + color + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">' + (i+1) + '</span>' +
+      '<span style="flex:1;font-size:13px;"><b>' + v.name + '</b> <span style="font-size:11px;color:var(--text-secondary);">' + (v.time||'') + '</span></span>' +
+    '</div>';
+  }
+
+
+  var firstTime = visits.today[0]?.time?.split('-')[0] || '09:00';
+  var lastEnd = visits.today[visits.today.length-1]?.time?.split('-')[1] || '12:00';
+  var travelToFirst = getTravelTime('公司', visits.today[0].name);
+  var departMin = 9 * 60 - travelToFirst.min;
+  var departStr = String(Math.floor(departMin/60)).padStart(2,'0') + ':' + String(departMin%60).padStart(2,'0');
+
+  document.getElementById('spRouteBody').innerHTML =
+    '<div style="padding:16px 0 12px;"><div style="font-size:18px;font-weight:700;">\ud83d\uddfa\ufe0f 最优路线方案</div><div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">已按顺序优化路线和时间</div></div>' +
+    '<div class="sc" style="padding:0;overflow:hidden;border-radius:var(--radius);height:200px;position:relative;background:#d4e9f7;">' +
+      '<div style="position:absolute;inset:0;background:linear-gradient(90deg,transparent 48%,#fff 48%,#fff 52%,transparent 52%),linear-gradient(transparent 48%,#fff 48%,#fff 52%,transparent 52%),radial-gradient(circle at 20% 30%,#a8d5a2 50px,transparent 50px),radial-gradient(circle at 80% 70%,#a8d5a2 40px,transparent 40px);opacity:0.5;"></div>' +
+      mapHtml +
+      '<div style="position:absolute;bottom:4px;right:6px;font-size:7px;color:rgba(71,85,105,0.5);background:rgba(255,255,255,0.8);padding:1px 4px;border-radius:2px;">\u00a9 模拟地图</div>' +
+    '</div>' +
+    '<div class="sc" style="padding:10px 14px;"><div style="font-size:13px;line-height:2;">' + routeHtml + '</div></div>' +
+    '<div class="sc" style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">' +
+      '<span style="font-size:13px;">\u23f1\ufe0f ' + firstTime + '\u2192' + lastEnd + '</span>' +
+      '<span style="font-size:13px;font-weight:600;color:var(--primary);">总里程 ' + totalKm + 'km</span>' +
+      '<span style="font-size:13px;">推荐出发 <b>' + departStr + '</b></span>' +
+    '</div>' +
+    (routeConfirmed
+      ? '<div class="sp-actions"><div class="sp-btn o" onclick="modifyRoute()">\u270f\ufe0f 修改路线</div></div>'
+      : '<div class="sp-actions"><div class="sp-btn p" onclick="confirmRoute()">\u2705 确认路线</div></div>');
+  openSubpage('spRoute');
+}
+
+
+
+function moveVisitFromRoute(idx, dir) {
+  moveVisit(idx, dir);
+  doRoute();
+}
+function confirmRoute() {
+  routeConfirmed = true;
+  showToast('\u2705 路线已确认');
+  doRoute();
+}
+function modifyRoute() {
+  routeConfirmed = false;
+  doRoute();
+}
+function submitCoachApp(data) {
+  const app = { id: coachIdCounter++, ...data, applicant:'王小明', status:'pending', leadRole:data.leadRole||'applicant' };
+  coachApps.push(app);
+  showToast(`✅ 陪访申请已提交，等待${data.manager}主管审批`);
+  doCoach();
+}
+
+function doCoach() {
+  renderCoachPage();
+}
+
+function renderCoachPage() {
+  const body = document.getElementById('spCoachBody');
+  const isManager = appView === 'manager';
+  const apps = isManager
+    ? coachApps // Manager sees all applications
+    : coachApps.filter(a => a.applicant === '王小明');
+
+  let html = `
+    <div style="padding:16px 0 12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:18px;font-weight:700;">🤝 陪访管理</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">${isManager ? '审批成员的陪访申请' : '申请主管陪同拜访'}</div>
+        </div>
+      </div>
+    </div>`;
+
+  if (isManager) {
+    // Manager view
+    const pending = coachApps.filter(a => (a.manager === '李国强' || a.applicant === '李国强') && a.status === 'pending');
+    const approved = coachApps.filter(a => (a.manager === '李国强' || a.applicant === '李国强') && a.status === 'approved');
+    const rejected = coachApps.filter(a => (a.manager === '李国强' || a.applicant === '李国强') && a.status === 'rejected');
+
+    if (pending.length > 0) {
+      html += `<div class="card"><div class="card-title">📩 待审批申请 <span class="badge badge-r" style="margin-left:4px;">${pending.length}</span></div>`;
+      pending.forEach(a => {
+        html += `
+          <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+              <div style="display:flex;gap:10px;">
+                <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#f59e0b,#ef4444);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:12px;flex-shrink:0;">${a.applicant[0]}</div>
+                <div>
+                  <div><b>${a.applicant}</b> 申请陪访 <b>${a.customer}</b></div>
+                  <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">${a.reason}</div>
+                  <div style="font-size:11px;color:var(--text-light);margin-top:2px;">${a.time} · 指定主管：${a.manager}</div>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px;padding-left:42px;">
+              <button class="cr-act p" onclick="approveCoach(${a.id});renderCoachPage();showToast('✅ 已同意 ${a.applicant} 的陪访申请')">✓ 同意</button>
+              <button class="cr-act o" onclick="rejectCoach(${a.id});renderCoachPage();showToast('❌ 已拒绝 ${a.applicant} 的陪访申请')">✕ 拒绝</button>
+            </div>
+          </div>`;
+      });
+      html += `</div>`;
+    } else {
+      html += `<div class="card" style="text-align:center;padding:20px;color:var(--text-light);font-size:13px;">📭 暂无待审批的陪访申请</div>`;
+    }
+
+    if (approved.length > 0) {
+      html += `<div class="card"><div class="card-title">✅ 已审批记录</div>`;
+      approved.forEach(a => {
+        const done = coachSummaries.find(s => s.coachId === a.id);
+        html += `
+          <div style="padding:6px 0;display:flex;justify-content:space-between;align-items:center;">
+            <div><b>${a.applicant}</b> · ${a.customer} <span style="font-size:12px;color:var(--text-secondary);">${a.time}</span></div>
+            ${done
+              ? '<button class="cr-act p" style="padding:3px 8px;font-size:11px;" onclick="showCoachSummary(\'' + a.customer + '\')">📋 查看小结</button>'
+              : '<span class="badge badge-g">已同意</span>'}
+          </div>`;
+      });
+      html += `</div>`;
+    }
+    // Completed coach visits with summaries
+    if (coachSummaries.length > 0) {
+      html += `<div class="card"><div class="card-title">📋 已完成陪访</div>`;
+      coachSummaries.forEach(s => {
+        html += `
+          <div style="padding:6px 0;display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="showCoachSummary('${s.customer}')">
+            <div><b>${s.applicant || '申请人'}</b> · ${s.customer} <span style="font-size:12px;color:var(--text-secondary);">${s.time}</span></div>
+            <span style="color:var(--primary);font-size:11px;">查看 ›</span>
+          </div>`;
+      });
+      html += `</div>`;
+    }
+  } else {
+    // Member view (original)
+    const pending = coachApps.filter(a => a.applicant === '王小明' && a.status === 'pending');
+    const approved = coachApps.filter(a => a.applicant === '王小明' && a.status === 'approved');
+
+    if (pending.length > 0) {
+      html += `<div class="card"><div class="card-title">⏳ 待审批 <span style="font-size:10px;font-weight:400;color:var(--text-light);">${pending.length}项</span></div>`;
+      pending.forEach(a => {
+        html += `
+          <div style="padding:8px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div><b>${a.customer}</b> · <span style="font-size:12px;color:var(--text-secondary);">主管 ${a.manager}</span></div>
+              <span class="badge badge-a">待审批</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">${a.reason}</div>
+            <div style="font-size:11px;color:var(--text-light);margin-top:2px;">${a.time}</div>
+          </div>`;
+      });
+      html += `</div>`;
+    }
+
+    if (approved.length > 0) {
+      html += `<div class="card"><div class="card-title">✅ 已通过的陪访</div>`;
+      approved.forEach(a => {
+        html += `
+          <div style="padding:8px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div><b>${a.customer}</b> · <span style="font-size:12px;color:var(--text-secondary);">${a.manager}主管陪同</span></div>
+              <span class="badge badge-g">已通过</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-secondary);">${a.time}</div>
+          </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // New application form
+    html += `
+      <div class="card">
+        <div class="card-title">📝 发起新陪访申请</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <select id="coachCustomer" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);font-size:13px;background:var(--card);">
+            <option value="">选择客户</option>
+            ${visits.today.map(v => `<option value="${v.name}">${v.name}</option>`).join('')}
+            ${visits.tomorrow.map(v => `<option value="${v.name}">${v.name}（明日）</option>`).join('')}
+          </select>
+          <select id="coachManager" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);font-size:13px;background:var(--card);">
+            <option value="">选择主管</option>
+            <option value="李国强">李国强（销售主管）</option>
+            <option value="张敏">张敏（资深主管）</option>
+            <option value="王浩">王浩（区域经理）</option>
+          </select>
+          <div style="font-size:12px;font-weight:500;color:var(--text-secondary);margin-top:4px;">🎤 主谈人</div>
+          <div style="display:flex;gap:6px;">
+            <label style="flex:1;display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;">
+              <input type="radio" name="coachLeadRole" value="applicant" checked onchange="document.getElementById('leadRoleVal').value='applicant'">
+              我来主讲
+            </label>
+            <label style="flex:1;display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;">
+              <input type="radio" name="coachLeadRole" value="manager" onchange="document.getElementById('leadRoleVal').value='manager'">
+              主管主讲
+            </label>
+          </div>
+          <input type="hidden" id="leadRoleVal" value="applicant">
+          <textarea id="coachReason" placeholder="申请原因（如：客户情况复杂、需要产品支持等）" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);font-size:13px;resize:none;height:50px;background:var(--card);font-family:inherit;"></textarea>
+          <button class="sp-btn p" onclick="doSubmitCoach()">提交申请</button>
+        </div>
+      </div>`;
+  }
+
+  body.innerHTML = html;
+  openSubpage('spCoach');
+}
+
+function doSubmitCoach() {
+  const customer = document.getElementById('coachCustomer').value;
+  const manager = document.getElementById('coachManager').value;
+  const reason = document.getElementById('coachReason').value.trim();
+  const leadRole = document.getElementById('leadRoleVal').value;
+  if (!customer) { showToast('请选择客户'); return; }
+  if (!manager) { showToast('请选择主管'); return; }
+  if (!reason) { showToast('请填写申请原因'); return; }
+  submitCoachApp({ customer, manager, reason, leadRole, time: '7月14日（今日）' });
+}
+
+// ===== Content Marketing =====
+let contentPosts = [
+  { type:'poster', date:'7月14日', title:'早安 · 保险人的一天', summary:'用专业守护每一个家庭，从清晨的第一份保障开始', bg:'linear-gradient(135deg,#f97316,#ec4899)', emoji:'🌅' },
+  { type:'article', date:'7月14日', title:'为什么重疾险要趁早买？', summary:'重疾发病率逐年上升，30岁后每10年翻一倍', tags:'保险科普', readTime:'3分钟' },
+  { type:'poster', date:'7月13日', title:'守护每一个奋斗的你', summary:'你的努力值得被守护，保险让奋斗无后顾之忧', bg:'linear-gradient(135deg,#2563eb,#8b5cf6)', emoji:'💪' },
+  { type:'article', date:'7月13日', title:'给孩子买保险的三大误区', summary:'90%的家长都踩过这些坑，看看你中了几个', tags:'保险科普', readTime:'5分钟' },
+  { type:'poster', date:'7月12日', title:'家庭保障的四个支柱', summary:'重疾+医疗+意外+养老，一个都不能少', bg:'linear-gradient(135deg,#10b981,#14b8a6)', emoji:'🏠' },
+  { type:'article', date:'7月12日', title:'年金险：让时间成为你的朋友', summary:'复利的奇迹，从一份年金险开始', tags:'理财科普', readTime:'4分钟' },
+  { type:'poster', date:'7月11日', title:'爱与责任，从一份保单开始', summary:'不是因为我需要，而是因为我爱他们', bg:'linear-gradient(135deg,#ec4899,#6366f1)', emoji:'❤️' },
+  { type:'article', date:'7月11日', title:'医保报销不够？商业医疗险来补', summary:'医保目录外费用平均占40%，商业医疗险帮你覆盖', tags:'保险科普', readTime:'3分钟' },
+];
+
+function showContent() {
+  const body = document.getElementById('spContentBody');
+  let html = `
+    <div style="padding:16px 0 12px;">
+      <div style="font-size:18px;font-weight:700;">🌅 AI 内容营销</div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">AI 每日自动生成早安海报和朋友圈文章</div>
+    </div>
+
+    <!-- Today's auto-generated poster -->
+    <div class="card" style="overflow:hidden;padding:0;cursor:pointer;" onclick="showContentDetail(0)">
+      <div style="padding:24px 20px 20px;background:${contentPosts[0].bg || 'linear-gradient(135deg,#f97316,#ec4899)'};color:#fff;text-align:center;">
+        <div style="font-size:40px;margin-bottom:8px;">${contentPosts[0].emoji || '🌅'}</div>
+        <div style="font-size:20px;font-weight:700;margin-bottom:4px;">${contentPosts[0].title}</div>
+        <div style="font-size:13px;opacity:0.9;">${contentPosts[0].summary}</div>
+        <div style="margin-top:10px;font-size:11px;opacity:0.6;">${contentPosts[0].date} · AI 自动生成</div>
+      </div>
+    </div>
+
+    <!-- Today's article -->
+    ${contentPosts[1] && contentPosts[1].type === 'article' ? `
+    <div class="card" style="cursor:pointer;padding:14px 16px;" onclick="showContentDetail(1)">
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <div style="width:50px;height:50px;border-radius:10px;background:var(--primary-bg);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">📖</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:600;">${contentPosts[1].title}</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:3px;">${contentPosts[1].summary}</div>
+          <div style="display:flex;gap:6px;margin-top:5px;">
+            <span class="badge badge-b">${contentPosts[1].tags || '保险科普'}</span>
+            <span style="font-size:11px;color:var(--text-light);">${contentPosts[1].readTime || '3分钟'}</span>
+          </div>
+        </div>
+      </div>
+    </div>` : ''}
+
+    <div style="display:flex;gap:6px;margin:8px 0;">
+      <button class="cr-act p" style="flex:1;padding:8px;" onclick="showToast('📤 已保存到相册（演示）')">📤 保存海报</button>
+      <button class="cr-act o" style="flex:1;padding:8px;" onclick="showToast('📋 已复制分享文案（演示）')">📋 复制文案</button>
+      <button class="cr-act o" style="flex:1;padding:8px;" onclick="showToast('🔄 AI 重新生成中...（演示）')">🔄 换一张</button>
+    </div>
+
+    <div class="card-title" style="font-size:15px;margin:12px 0 6px;">📚 历史内容</div>`;
+
+  // History list
+  for (var i = 2; i < contentPosts.length; i++) {
+    var p = contentPosts[i];
+    if (p.type === 'poster') {
+      html += '<div class="card" style="cursor:pointer;padding:10px 14px;display:flex;align-items:center;gap:12px;" onclick="showContentDetail(' + i + ')">' +
+        '<div style="width:44px;height:44px;border-radius:8px;background:' + (p.bg || 'var(--gradient-2)') + ';display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">' + (p.emoji || '🌅') + '</div>' +
+        '<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;">' + p.title + '</div><div style="font-size:11px;color:var(--text-light);margin-top:2px;">' + p.date + ' · 早安海报</div></div>' +
+        '<span style="color:var(--text-light);">›</span></div>';
+    } else {
+      html += '<div class="card" style="cursor:pointer;padding:10px 14px;display:flex;align-items:center;gap:12px;" onclick="showContentDetail(' + i + ')">' +
+        '<div style="width:44px;height:44px;border-radius:8px;background:var(--primary-bg);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">📖</div>' +
+        '<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;">' + p.title + '</div><div style="font-size:11px;color:var(--text-light);margin-top:2px;">' + p.date + ' · ' + (p.tags || '文章') + '</div></div>' +
+        '<span style="color:var(--text-light);">›</span></div>';
+    }
+  }
+
+  body.innerHTML = html;
+  openSubpage('spContent');
+}
+
+function showContentDetail(idx) {
+  var p = contentPosts[idx];
+  if (!p) return;
+  if (p.type === 'poster') {
+    document.getElementById('spContentBody').innerHTML =
+      '<div style="padding:16px 0 12px;"><div class="sp-back" style="display:inline-flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;" onclick="showContent()">‹ 返回</div></div>' +
+      '<div class="card" style="overflow:hidden;padding:0;">' +
+        '<div style="padding:40px 24px 30px;background:' + (p.bg || 'linear-gradient(135deg,#f97316,#ec4899)') + ';color:#fff;text-align:center;">' +
+          '<div style="font-size:56px;margin-bottom:12px;">' + (p.emoji || '🌅') + '</div>' +
+          '<div style="font-size:24px;font-weight:700;margin-bottom:8px;line-height:1.4;">' + p.title + '</div>' +
+          '<div style="font-size:15px;opacity:0.9;line-height:1.6;max-width:280px;margin:0 auto;">' + p.summary + '</div>' +
+          '<div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.2);">' +
+            '<div style="font-size:12px;opacity:0.6;">' + p.date + '</div>' +
+            '<div style="font-size:11px;opacity:0.4;margin-top:4px;">个险AI营销助手 · 每日早安</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;margin-top:8px;">' +
+        '<button class="cr-act p" style="flex:1;padding:8px;" onclick="showToast(\'📤 已保存到相册（演示）\')">📤 保存图片</button>' +
+        '<button class="cr-act o" style="flex:1;padding:8px;" onclick="showToast(\'📋 已复制分享文案（演示）\')">📋 复制文案</button>' +
+      '</div>';
+  } else {
+    // Article detail
+    var detailContent = {
+      '为什么重疾险要趁早买？': '<p>近年来，重大疾病的发病率呈逐年上升趋势。据统计，人一生患重大疾病的概率高达72%。</p><p>更值得关注的是，30岁之后，重疾发病率每10年翻一倍。在40-50岁这个阶段，发病率显著上升，而这正是家庭责任最重的时候。</p><p>重疾险的保费与被保人的年龄直接相关。同样的保额，30岁购买比40岁购买每年要便宜30%-40%。而且随着年龄增长，身体状况变化可能导致拒保或加费。</p><p><b>越早买，越便宜，越容易通过核保。</b></p>',
+      '给孩子买保险的三大误区': '<p><b>误区一：只给孩子买，大人裸奔</b></p><p>很多父母优先给孩子配置保险，却忽略了自己。实际上，大人才是孩子最大的保障。大人倒下了，孩子的保费谁来交？</p><p><b>误区二：要买就买最贵的</b></p><p>保险不是越贵越好，而是要匹配家庭实际情况。给孩子买保险，优先配置重疾+医疗+意外，年保费控制在家庭年收入的5%-8%即可。</p><p><b>误区三：一张保单保所有</b></p><p>所谓"全能险"往往保费高、保障低。建议分开配置，专险专用，性价比更高。</p>',
+      '年金险：让时间成为你的朋友': '<p>年金险的核心逻辑其实很简单：现在存钱，未来领钱，关键是——强制储蓄 + 复利增值。</p><p>复利被爱因斯坦称为"世界第八大奇迹"。假设30岁开始每年存2万，到60岁退休时，按3.5%复利计算，总账户价值超过100万。</p><p>而同样的投入，如果是单利计算，只有约60万。</p><p><b>时间越长，复利的威力越大。</b>这就是为什么年金险越早配置越好的原因。</p>',
+      '医保报销不够？商业医疗险来补': '<p>很多人以为有医保就够了，但现实是：医保目录外费用平均占比高达40%。</p><p>尤其是一些大病治疗中，进口药、靶向药、特殊治疗手段往往不在医保报销范围内。一场大病下来，自费部分可能高达十几万甚至几十万。</p><p>商业医疗险就是用来弥补这个缺口的。每年几百到几千元的保费，就能获得几百万的医疗保障额度。</p><p><b>医保打底，商保补充，才是最完整的医疗保障方案。</b></p>',
+    }[p.title] || '<p>' + p.summary + '</p><p>更多内容正在生成中...</p>';
+
+    document.getElementById('spContentBody').innerHTML =
+      '<div style="padding:16px 0 12px;"><div class="sp-back" style="display:inline-flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;" onclick="showContent()">‹ 返回</div></div>' +
+      '<div class="card"><div style="font-size:18px;font-weight:700;margin-bottom:4px;">' + p.title + '</div>' +
+      '<div style="font-size:12px;color:var(--text-light);margin-bottom:10px;">' + p.date + ' · ' + (p.tags || '保险科普') + ' · ' + (p.readTime || '3分钟') + '</div>' +
+      '<div style="font-size:14px;line-height:1.8;color:var(--text);">' + detailContent + '</div></div>' +
+      '<div style="display:flex;gap:6px;margin-top:8px;">' +
+        '<button class="cr-act p" style="flex:1;padding:8px;" onclick="showToast(\'📤 已转发到朋友圈（演示）\')">📤 转发朋友圈</button>' +
+        '<button class="cr-act o" style="flex:1;padding:8px;" onclick="showToast(\'📋 已复制链接（演示）\')">📋 复制链接</button>' +
+      '</div>';
+  }
+}
+
+function approveCoach(id) {
+  const app = coachApps.find(a => a.id === id);
+  if (!app) return;
+  app.status = 'approved';
+  // Add to schedule if not already there
+  const inSchedule = visits.today.find(v => v.name === app.customer);
+  if (!inSchedule) {
+    visits.today.push({ name: app.customer, time: '14:00-15:00', status: 'confirmed' });
+  }
+  renderCanvas();
+}
+
+function rejectCoach(id) {
+  const app = coachApps.find(a => a.id === id);
+  if (!app) return;
+  app.status = 'rejected';
+}
+
+// ===== Input =====
+// ===== Chat Page =====
+let chatMessages = [];
+
+function processCommand(text) {
+  // Extract customer name from text
+  var names = Object.keys(C);
+  var customer = null;
+  for (var i = 0; i < names.length; i++) {
+    if (text.indexOf(names[i]) !== -1) { customer = names[i]; break; }
+  }
+
+  // Close chat subpage if open, so command page won't be covered
+  closeSubpage('spChat');
+
+  // Route commands
+  if (text.indexOf('路线') !== -1 || text.indexOf('地图') !== -1 || text.indexOf('导航') !== -1) {
+    doRoute();
+    return '🗺️ 已打开路线规划';
+  }
+  if (text.indexOf('陪访') !== -1) {
+    doCoach();
+    return '🤝 已进入陪访管理';
+  }
+  if (text.indexOf('建议书') !== -1 || text.indexOf('方案') !== -1 || text.indexOf('计划书') !== -1) {
+    if (customer) { showProposal(customer); return '📄 已打开' + customer + '的建议书'; }
+    showPicker('建议书','proposal');
+    return '📄 请选择客户查看建议书';
+  }
+  if (text.indexOf('物料') !== -1 || text.indexOf('资料') !== -1) {
+    if (customer) { showMaterials(customer); return '📦 已打开' + customer + '的物料'; }
+    showPicker('物料','materials');
+    return '📦 请选择客户查看物料';
+  }
+  if (text.indexOf('小结') !== -1 || text.indexOf('总结') !== -1 || text.indexOf('复盘') !== -1) {
+    if (customer) { showSummary(customer); return '📋 已打开' + customer + '的拜访小结'; }
+    showPicker('小结','summary');
+    return '📋 请选择客户查看小结';
+  }
+  if (text.indexOf('早安') !== -1 || text.indexOf('海报') !== -1 || text.indexOf('内容') !== -1) {
+    showContent();
+    return '🌅 已打开早安海报';
+  }
+  if (text.indexOf('日程') !== -1 || text.indexOf('排期') !== -1 || text.indexOf('行程') !== -1) {
+    openSubpage('spSchedule');
+    renderSchedule();
+    return '📅 已打开日程管理';
+  }
+  if (customer && (text.indexOf('拜访') !== -1 || text.indexOf('见') !== -1)) {
+    showVisit(customer);
+    return '🚶 已进入' + customer + '的拜访页面';
+  }
+  if (text.indexOf('首页') !== -1 || text.indexOf('主页') !== -1 || text.indexOf('回去') !== -1) {
+    closeAllSubpages();
+    return '🏠 已返回首页';
+  }
+
+  return null; // not a command, normal chat
+}
+
+function addChatMessage(speaker, text) {
+  const now = new Date();
+  const time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  chatMessages.push({ speaker, text, time });
+  renderChat();
+  openSubpage('spChat');
+}
+
+function renderChat() {
+  const body = document.getElementById('spChatBody');
+  body.innerHTML =
+    '<div class="chat-msgs" id="chatMsgs">' +
+    chatMessages.map(m => {
+      const isUser = m.speaker === 'user';
+      return '<div class="chat-msg ' + (isUser ? 'cm-user' : 'cm-ai') + '">' +
+        '<div class="cm-avatar" style="background:' + (isUser ? 'var(--primary)' : 'var(--success)') + ';">' + (isUser ? '王' : 'AI') + '</div>' +
+        '<div class="cm-bubble">' +
+          '<div>' + m.text + '</div>' +
+          '<div class="cm-time">' + m.time + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('') +
+    '</div>' +
+    '<div class="chat-input"><div class="vi-row">' +
+      '<button class="v-btn" style="width:36px;height:36px;font-size:16px;" onmousedown="chatStartVoice()" onmouseup="chatStopVoice()" onmouseleave="chatStopVoice()" ontouchstart="chatStartVoice()" ontouchend="chatStopVoice()">🎤</button>' +
+      '<input type="text" id="chatInput" placeholder="输入消息..." style="flex:1;border:1px solid var(--border);border-radius:20px;padding:8px 14px;font-size:13px;outline:none;background:var(--bg);">' +
+      '<button class="send-btn" onclick="sendChat()">➤</button>' +
+    '</div></div>';
+
+  // Attach Enter key listener
+  const chatInput = document.getElementById('chatInput');
+  if (chatInput) {
+    chatInput.onkeydown = function(e) { if (e.key === 'Enter') sendChat(); };
+    chatInput.focus();
+  }
+  const msgs = document.getElementById('chatMsgs');
+  if (msgs) msgs.scrollTop = msgs.scrollHeight;
+}
+
+function sendChat() {
+  const input = document.getElementById('chatInput');
+  const v = input.value.trim();
+  if (!v) return;
+  input.value = '';
+  if (processCommand(v) !== null) return;
+  addChatMessage('user', v);
+  setTimeout(function() {
+    var replies = [
+      '好的，我记下了。需要帮您准备建议书吗？',
+      '收到，我查一下客户信息。',
+      '了解，还有什么需要帮忙的吗？',
+      '好的，已为您记录下来。'
+    ];
+    addChatMessage('ai', replies[Math.floor(Math.random() * replies.length)]);
+  }, 800);
+}
+
+// ===== Voice Input (按住说话) =====
+let voiceTimer = null;
+let voiceActive = false;
+let voiceLock = 0;
+
+function startVoice() {
+  if (voiceActive || Date.now() - voiceLock < 500) return;
+  voiceActive = true;
+  voiceLock = Date.now();
+  const vRec = document.getElementById('vRec');
+  const vInput = document.getElementById('vInput');
+  const vResult = document.getElementById('vRecResult');
+  vRec.classList.add('show');
+  vInput.classList.add('hide');
+  vResult.classList.remove('show');
+  vResult.innerHTML = '';
+  document.getElementById('vMicBtn').style.transform = 'scale(0.88)';
+  voiceTimer = setTimeout(() => { stopVoice(); }, 5000);
+}
+
+function stopVoice() {
+  if (!voiceActive) return;
+  voiceActive = false;
+  const vRec = document.getElementById('vRec');
+  const vInput = document.getElementById('vInput');
+  const btn = document.getElementById('vMicBtn');
+  btn.style.transform = '';
+  if (!vRec || !vRec.classList.contains('show')) return;
+  voiceLock = Date.now();
+  vRec.classList.remove('show');
+  vInput.classList.remove('hide');
+  if (voiceTimer) { clearTimeout(voiceTimer); voiceTimer = null; }
+
+  // Send recognized text to chat
+  const text = '好的小王，明天下午2点我有空，你过来吧。';
+  if (processCommand(text) !== null) return;
+  addChatMessage('user', '🎤 ' + text);
+  setTimeout(function() {
+    addChatMessage('ai', '收到，已记录客户约访信息。需要添加到日程吗？');
+  }, 800);
+}
+
+let chatVoiceActive = false;
+let chatVoiceLock = 0;
+
+function chatStartVoice() {
+  if (chatVoiceActive || Date.now() - chatVoiceLock < 500) return;
+  chatVoiceActive = true;
+  chatVoiceLock = Date.now();
+  const btn = document.querySelector('#spChatBody .v-btn');
+  if (btn) btn.style.transform = 'scale(0.88)';
+  showToast('🎤 录音中...松开发送');
+}
+
+function chatStopVoice() {
+  const btn = document.querySelector('#spChatBody .v-btn');
+  if (btn) btn.style.transform = '';
+  if (!chatVoiceActive) return;
+  chatVoiceActive = false;
+  chatVoiceLock = Date.now();
+  const text = '明天下午2点拜访张建国';
+  if (processCommand(text) !== null) return;
+  addChatMessage('user', '🎤 ' + text);
+  setTimeout(function() { addChatMessage('ai', '好的，已安排明天下午2点拜访张建国，需要我准备什么吗？'); }, 800);
+}
+
+function doInput() {
+  const v = document.getElementById('cmdInput').value.trim();
+  if (!v) return;
+  document.getElementById('cmdInput').value = '';
+  if (processCommand(v) !== null) return;
+  addChatMessage('user', v);
+  setTimeout(function() { addChatMessage('ai', '收到，我记下了。还有什么需要帮忙的吗？'); }, 600);
+}
+
+function updateTime() { const n=new Date(); document.getElementById('statusTime').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0'); }
+updateTime(); setInterval(updateTime,30000);
+renderCanvas();
+</script>
+</body>
+</html>
