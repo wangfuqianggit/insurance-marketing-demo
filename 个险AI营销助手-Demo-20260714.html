@@ -583,17 +583,8 @@ let rescheduleTarget = '';
 function showReschedule(name) {
   rescheduleTarget = name;
   rescheduleMode = 'replace';
-  document.getElementById('rescheduleTitle').textContent = '更换拜访客户';
+  document.getElementById('rescheduleTitle').textContent = '更换客户';
   document.getElementById('rescheduleSub').textContent = '选择今天可以补位的客户';
-  renderRescheduleList();
-  document.getElementById('rescheduleOverlay').classList.add('show');
-}
-
-function showAddCustomer() {
-  rescheduleTarget = '';
-  rescheduleMode = 'add';
-  document.getElementById('rescheduleTitle').textContent = '新增拜访客户';
-  document.getElementById('rescheduleSub').textContent = '选择要新增的客户';
   renderRescheduleList();
   document.getElementById('rescheduleOverlay').classList.add('show');
 }
@@ -601,20 +592,10 @@ function showAddCustomer() {
 function renderRescheduleList() {
   const list = document.getElementById('rescheduleList');
   list.innerHTML = '';
-  // Update title/subtitle dynamically
-  const titleEl = document.getElementById('rescheduleTitle');
   const subEl = document.getElementById('rescheduleSub');
-  if (subEl) { subEl.style.display = rescheduleMode === 'add' ? 'none' : ''; subEl.textContent = rescheduleMode === 'add' ? '' : '选择今天可以补位的客户'; }
+  if (subEl) { subEl.style.display = ''; subEl.textContent = '选择今天可以补位的客户'; }
 
-  // Mode toggle (only show in replace mode)
-  if (rescheduleMode !== 'add') {
-    const modeDiv = document.createElement('div');
-    modeDiv.style.cssText = 'display:flex;gap:8px;margin-bottom:12px;';
-    modeDiv.innerHTML = '<button class="cr-act p" style="flex:1;" onclick="rescheduleMode=\'replace\';renderRescheduleList()">🔄 替换客户</button><button class="cr-act o" style="flex:1;" onclick="rescheduleMode=\'add\';renderRescheduleList()">➕ 新增客户</button>';
-    list.appendChild(modeDiv);
-  }
-
-  if (rescheduleMode === 'replace' && !rescheduleTarget) {
+  if (!rescheduleTarget) {
     const tip = document.createElement('div');
     tip.style.cssText = 'font-size:12px;color:var(--text-light);padding:8px 0;';
     tip.textContent = '请从今日拜访中选择要替换的客户';
@@ -624,7 +605,7 @@ function renderRescheduleList() {
 
   const title = document.createElement('div');
   title.style.cssText = 'font-size:12px;color:var(--text-secondary);margin-bottom:6px;font-weight:500;';
-  title.textContent = rescheduleMode === 'replace' ? ('选择替换 ' + rescheduleTarget + ' 的客户：') : '选择要新增的客户：';
+  title.textContent = '选择替换 ' + rescheduleTarget + ' 的客户：';
   list.appendChild(title);
 
   reserveCustomers.forEach(name => {
@@ -632,16 +613,11 @@ function renderRescheduleList() {
     div.className = 'picker-option';
     div.onclick = () => {
       hideReschedule();
-      if (rescheduleMode === 'replace') {
-        visits.today = visits.today.map(v => v.name === rescheduleTarget ? { ...v, name: name, status: 'confirmed' } : v);
-        showToast(`✅ ${rescheduleTarget} 已更换为 ${name}`);
-      } else {
-        visits.today.push({ name: name, time: '待定', status: 'confirmed' });
-        recalculateRoute();
-        showToast(`✅ 已新增 ${name} 到今日拜访`);
-        if (document.getElementById('spSchedule').classList.contains('show')) renderSchedule();
-      }
+      visits.today = visits.today.map(v => v.name === rescheduleTarget ? { ...v, name: name, status: 'confirmed' } : v);
+      recalculateRoute();
+      showToast(`✅ ${rescheduleTarget} 已更换为 ${name}`);
       renderCanvas();
+      if (document.getElementById('spSchedule').classList.contains('show')) renderSchedule();
     };
     const c = C[name];
     div.innerHTML = '<div class="po-a" style="background:' + (c?.bg||'#6366f1') + ';">' + (c?.a||name[0]) + '</div><div class="po-info"><div class="po-n">' + name + ' <span style="font-size:11px;font-weight:400;color:var(--text-light);">' + (c?.age||'') + '</span></div><div class="po-d">' + (c?.addr||'') + ' · ' + (c?.tag||'备选客户') + '</div></div>';
@@ -943,7 +919,7 @@ function renderSchedule() {
       return `
     <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-left:2px solid var(--border);padding-left:10px;margin-left:4px;">
       <div style="width:76px;font-size:10px;color:var(--text-light);flex-shrink:0;">${slot.range}</div>
-      <div style="font-size:12px;color:var(--text-light);cursor:pointer;" onclick="showAddCustomer()">➕ 点击新增</div>
+      <div style="height:20px;"></div>
     </div>`;
     }
     return slot.visits.map(v => {
