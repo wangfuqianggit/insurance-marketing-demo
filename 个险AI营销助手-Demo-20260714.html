@@ -580,6 +580,15 @@ function hidePicker() { pickerOverlay.classList.remove('show'); pickerCallback=n
 let rescheduleMode = 'replace'; // 'replace' | 'add'
 let rescheduleTarget = '';
 
+function showAddCustomer() {
+  rescheduleTarget = '';
+  rescheduleMode = 'add';
+  document.getElementById('rescheduleTitle').textContent = '新增拜访客户';
+  document.getElementById('rescheduleSub').textContent = '选择要新增的客户';
+  renderRescheduleList();
+  document.getElementById('rescheduleOverlay').classList.add('show');
+}
+
 function showReschedule(name) {
   rescheduleTarget = name;
   rescheduleMode = 'replace';
@@ -593,9 +602,13 @@ function renderRescheduleList() {
   const list = document.getElementById('rescheduleList');
   list.innerHTML = '';
   const subEl = document.getElementById('rescheduleSub');
-  if (subEl) { subEl.style.display = ''; subEl.textContent = '选择今天可以补位的客户'; }
+  if (rescheduleMode === 'add') {
+    if (subEl) { subEl.style.display = 'none'; }
+  } else {
+    if (subEl) { subEl.style.display = ''; subEl.textContent = '选择今天可以补位的客户'; }
+  }
 
-  if (!rescheduleTarget) {
+  if (rescheduleMode === 'replace' && !rescheduleTarget) {
     const tip = document.createElement('div');
     tip.style.cssText = 'font-size:12px;color:var(--text-light);padding:8px 0;';
     tip.textContent = '请从今日拜访中选择要替换的客户';
@@ -603,21 +616,22 @@ function renderRescheduleList() {
     return;
   }
 
-  const title = document.createElement('div');
-  title.style.cssText = 'font-size:12px;color:var(--text-secondary);margin-bottom:6px;font-weight:500;';
-  title.textContent = '选择替换 ' + rescheduleTarget + ' 的客户：';
-  list.appendChild(title);
-
   reserveCustomers.forEach(name => {
     const div = document.createElement('div');
     div.className = 'picker-option';
     div.onclick = () => {
       hideReschedule();
-      visits.today = visits.today.map(v => v.name === rescheduleTarget ? { ...v, name: name, status: 'confirmed' } : v);
-      recalculateRoute();
-      showToast(`✅ ${rescheduleTarget} 已更换为 ${name}`);
+      if (rescheduleMode === 'replace') {
+        visits.today = visits.today.map(v => v.name === rescheduleTarget ? { ...v, name: name, status: 'confirmed' } : v);
+        recalculateRoute();
+        showToast(`✅ ${rescheduleTarget} 已更换为 ${name}`);
+      } else {
+        visits.today.push({ name: name, time: '待定', status: 'confirmed' });
+        recalculateRoute();
+        showToast(`✅ 已新增 ${name} 到今日拜访`);
+        if (document.getElementById('spSchedule').classList.contains('show')) renderSchedule();
+      }
       renderCanvas();
-      if (document.getElementById('spSchedule').classList.contains('show')) renderSchedule();
     };
     const c = C[name];
     div.innerHTML = '<div class="po-a" style="background:' + (c?.bg||'#6366f1') + ';">' + (c?.a||name[0]) + '</div><div class="po-info"><div class="po-n">' + name + ' <span style="font-size:11px;font-weight:400;color:var(--text-light);">' + (c?.age||'') + '</span></div><div class="po-d">' + (c?.addr||'') + ' · ' + (c?.tag||'备选客户') + '</div></div>';
@@ -919,7 +933,7 @@ function renderSchedule() {
       return `
     <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-left:2px solid var(--border);padding-left:10px;margin-left:4px;">
       <div style="width:76px;font-size:10px;color:var(--text-light);flex-shrink:0;">${slot.range}</div>
-      <div style="height:20px;"></div>
+      <div style="font-size:12px;color:var(--text-light);cursor:pointer;" onclick="showAddCustomer()">➕ 点击新增</div>
     </div>`;
     }
     return slot.visits.map(v => {
