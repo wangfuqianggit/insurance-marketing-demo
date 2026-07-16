@@ -788,6 +788,7 @@ function hideNextVisit() { document.getElementById('nextVisitOverlay').classList
 
 // ===== Schedule Detail =====
 let scheduleSelDay = 0; // 0 = today, 1 = tomorrow, etc.
+let scheduleView = 'week'; // 'week' | 'month'
 
 function showSchedule() {
   scheduleSelDay = 0;
@@ -835,28 +836,91 @@ function renderSchedule() {
     dayVisits = apps.map(a => ({ name: a.name, time: a.time, status: 'booked' }));
   }
 
-  // Build week bar (clickable)
-  let weekHtml = '';
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(weekStart);
-    d.setDate(weekStart.getDate() + i);
-    const diff = Math.round((d - today) / 86400000);
-    const selected = diff === scheduleSelDay;
-    const hasVisit = (diff === 0 && visits.today.length > 0) ||
-      (diff === 1 && visits.tomorrow.length > 0) ||
-      (diff > 1 && nextAppointments.some(a => {
-        const m = a.date.match(/(\d+)月(\d+)日/);
-        return m && parseInt(m[1]) === d.getMonth()+1 && parseInt(m[2]) === d.getDate();
-      }));
-    weekHtml += `
-      <div onclick="scheduleSelDay=${diff};renderSchedule()" style="flex:1;text-align:center;padding:6px 0;border-radius:8px;cursor:pointer;background:${selected ? 'var(--primary)' : 'transparent'};color:${selected ? '#fff' : 'var(--text-secondary)'};${selected ? '' : ''}">
-        <div style="font-size:10px;">${weekdays[i]}</div>
-        <div style="font-size:14px;font-weight:${selected ? '700' : '500'};position:relative;">${d.getDate()}
-          ${hasVisit && !selected ? '<div style="width:4px;height:4px;border-radius:50%;background:var(--primary);margin:1px auto 0;"></div>' : ''}
-        </div>
-      </div>`;
-  }
+  // Build calendar (week or month view)
+  const viewDate = new Date(selDate);
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayDate = today.getDate();
+  const todayMonth = today.getMonth();
+  const todayYear = today.getFullYear();
+  const todayTs = today.getTime();
 
+  let calHtml = '';
+  // Toggle header
+  calHtml += '<div style="display:flex;align-items:center;gap:6px;margin:8px 0 4px;">';
+  calHtml += '<div style="flex:1;font-size:13px;font-weight:600;">' + (year + '年' + (month+1) + '月') + '</div>';
+  calHtml += '<span style="font-size:12px;color:var(--primary);cursor:pointer;" onclick="scheduleView=scheduleView===\'week\'?\'month\':\'week\';renderSchedule()">' + (scheduleView === 'month' ? '收起' : '展开月历') + '</span>';
+  calHtml += '</div>';
+
+  if (scheduleView === 'month') {
+    // Month navigation
+    calHtml += '<div style="display:flex;align-items:center;gap:10px;margin:0 0 6px;">';
+    calHtml += '<button class="cr-act o" style="font-size:11px;padding:2px 8px;" onclick="var d=new Date(' + todayTs + ');d.setDate(d.getDate()+scheduleSelDay);d.setDate(1);d.setMonth(d.getMonth()-1);scheduleSelDay=Math.round((d-new Date(' + todayTs + '))/86400000);renderSchedule()">‹</button>';
+    calHtml += '<div style="flex:1;text-align:center;font-size:14px;font-weight:600;">' + (year + '年' + (month+1) + '月') + '</div>';
+    calHtml += '<button class="cr-act o" style="font-size:11px;padding:2px 8px;" onclick="var d=new Date(' + todayTs + ');d.setDate(d.getDate()+scheduleSelDay);d.setDate(1);d.setMonth(d.getMonth()+1);scheduleSelDay=Math.round((d-new Date(' + todayTs + '))/86400000);renderSchedule()">›</button>';
+    calHtml += '</div>';
+
+    // Day-of-week headers
+    calHtml += '<div style="display:flex;gap:2px;margin-bottom:2px;">';
+    ['日','一','二','三','四','五','六'].forEach(function(dw) {
+      calHtml += '<div style="flex:1;text-align:center;font-size:10px;color:var(--text-light);padding:2px 0;">' + dw + '</div>';
+    });
+    calHtml += '</div>';
+
+    // Calendar grid
+    calHtml += '<div style="display:flex;flex-wrap:wrap;gap:2px;">';
+    for (let e = 0; e < firstDay; e++) {
+      calHtml += '<div style="width:14.28%;aspect-ratio:1;"></div>';
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cellDate = new Date(year, month, d);
+      const diff = Math.round((cellDate - today) / 86400000);
+      const isTd = d === todayDate && month === todayMonth && year === todayYear;
+      const selected = diff === scheduleSelDay;
+      const hasVisit = (diff === 0 && visits.today.length > 0) ||
+        (diff === 1 && visits.tomorrow.length > 0) ||
+        (diff > 1 && nextAppointments.some(function(a) {
+          const m = a.date.match(/(\d+)月(\d+)日/);
+          return m && parseInt(m[1]) === month+1 && parseInt(m[2]) === d;
+        }));
+      const st = 'width:14.28%;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;font-size:12px;font-weight:' + (selected||isTd?'600':'400') + ';background:' + (selected?'var(--primary)':isTd?'var(--primary-bg)':'transparent') + ';color:' + (selected?'#fff':isTd?'var(--primary)':'var(--text-secondary)') + ';';
+      calHtml += '<div style="' + st + '" onclick="scheduleSelDay=' + diff + ';renderSchedule()">';
+      calHtml += '<span>' + d + '</span>';
+      if (hasVisit) {
+        calHtml += '<div style="width:3px;height:3px;border-radius:50%;background:' + (selected?'rgba(255,255,255,0.8)':'var(--primary)') + ';margin-top:1px;"></div>';
+      }
+      calHtml += '</div>';
+    }
+    calHtml += '</div>';
+  } else {
+    // Week bar (7 days)
+    calHtml += '<div style="display:flex;gap:4px;">';
+    const weekStart2 = new Date(today);
+    weekStart2.setDate(today.getDate() - today.getDay());
+    for (let i = 0; i < 7; i++) {
+      const d2 = new Date(weekStart2);
+      d2.setDate(weekStart2.getDate() + i);
+      const diff2 = Math.round((d2 - today) / 86400000);
+      const selected2 = diff2 === scheduleSelDay;
+      const hasVisit2 = (diff2 === 0 && visits.today.length > 0) ||
+        (diff2 === 1 && visits.tomorrow.length > 0) ||
+        (diff2 > 1 && nextAppointments.some(function(a) {
+          const m = a.date.match(/(\d+)月(\d+)日/);
+          return m && parseInt(m[1]) === d2.getMonth()+1 && parseInt(m[2]) === d2.getDate();
+        }));
+      const isTd = d2.getDate() === todayDate && d2.getMonth() === todayMonth && d2.getFullYear() === todayYear;
+      calHtml += '<div onclick="scheduleSelDay=' + diff2 + ';renderSchedule()" style="flex:1;text-align:center;padding:6px 0;border-radius:8px;cursor:pointer;background:' + (selected2?'var(--primary)':isTd?'var(--primary-bg)':'transparent') + ';color:' + (selected2?'#fff':isTd?'var(--primary)':'var(--text-secondary)') + ';">';
+      calHtml += '<div style="font-size:10px;">' + ['日','一','二','三','四','五','六'][i] + '</div>';
+      calHtml += '<div style="font-size:14px;font-weight:' + (selected2?'700':'500') + ';position:relative;">' + d2.getDate() + '';
+      if (hasVisit2 && !selected2) {
+        calHtml += '<div style="width:4px;height:4px;border-radius:50%;background:var(--primary);margin:1px auto 0;"></div>';
+      }
+      calHtml += '</div></div>';
+    }
+    calHtml += '</div>';
+  }
   // Timeline for selected day
   const timeSlots = [
     { label:'上午', range:'09:00-12:00', visits:dayVisits.filter(v => {
@@ -903,8 +967,6 @@ function renderSchedule() {
     </div>`;
     }).join('');
   }).join('');
-
-  // Arrow navigation buttons
   const navHtml = `
     <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
       <button class="cr-act o" onclick="scheduleSelDay--;renderSchedule()" ${scheduleSelDay <= -1 ? 'disabled style=opacity:0.3' : ''}>‹ 前一天</button>
@@ -927,8 +989,8 @@ function renderSchedule() {
         </div>
       </div>
       ${appView === 'manager' ? '<div style="font-size:12px;color:var(--text-secondary);margin-top:6px;padding:6px 10px;background:var(--primary-bg);border-radius:6px;">👥 查看所有团队成员日程安排 · 点击主管端首页查看成员详情</div>' : ''}
-      <div style="display:flex;gap:4px;margin-top:10px;padding:4px;background:var(--card);border-radius:12px;box-shadow:var(--shadow);">
-        ${weekHtml}
+      <div style="margin-top:10px;padding:10px 14px;background:var(--card);border-radius:12px;box-shadow:var(--shadow);">
+        ${calHtml}
       </div>
       ${navHtml}
     </div>
