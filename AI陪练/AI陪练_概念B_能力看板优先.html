@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>概念B - 能力看板优先</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;}
+body{background:#f0f2f5;display:flex;justify-content:center;align-items:center;min-height:100vh;gap:20px;padding:20px;flex-wrap:wrap;}
+.phone{width:360px;height:780px;background:#fff;border-radius:32px;box-shadow:0 10px 40px rgba(0,0,0,.12);overflow:hidden;display:flex;flex-direction:column;position:relative;}
+.status-bar{height:40px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:11px;color:#333;flex-shrink:0;}
+.screen{flex:1;overflow-y:auto;display:flex;flex-direction:column;padding:0;}
+.screen::-webkit-scrollbar{display:none;}
+
+/* B: Dashboard-first */
+.phone-b .hero{padding:20px 20px 16px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;flex-shrink:0;}
+.phone-b .hero .greeting{font-size:14px;opacity:.85;}
+.phone-b .hero .name{font-size:22px;font-weight:700;margin:2px 0 12px;}
+.phone-b .hero .score-row{display:flex;gap:16px;}
+.phone-b .hero .score-item{flex:1;text-align:center;}
+.phone-b .hero .score-item .num{font-size:28px;font-weight:700;}
+.phone-b .hero .score-item .lbl{font-size:11px;opacity:.75;margin-top:2px;}
+.phone-b .hero .score-item .change{font-size:11px;margin-top:2px;}
+.phone-b .hero .score-item .change.up{color:#bbf7d0;}
+.phone-b .section{padding:16px 20px 8px;flex-shrink:0;}
+.phone-b .section .st{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.phone-b .section .st .t{font-size:15px;font-weight:600;color:#1a1a1a;}
+.phone-b .section .st .more{font-size:12px;color:#667eea;cursor:pointer;}
+
+/* dim bars */
+.phone-b .dims{padding:0 20px;flex-shrink:0;}
+.phone-b .dim-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.phone-b .dim-row .dn{width:64px;font-size:12px;color:#666;flex-shrink:0;}
+.phone-b .dim-row .db{flex:1;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;position:relative;}
+.phone-b .dim-row .db .fl{height:100%;border-radius:3px;transition:1s;}
+.phone-b .dim-row .db .fl-af{background:linear-gradient(90deg,#e0e7ff,#667eea);opacity:.4;position:absolute;top:0;left:0;height:100%;}
+.phone-b .dim-row .ds{width:30px;text-align:right;font-size:12px;font-weight:600;color:#1a1a1a;}
+.phone-b .dim-row .ds .chg{font-size:10px;font-weight:400;display:block;}
+.phone-b .dim-row .ds .chg.u{color:#52c41a;}
+.phone-b .dim-row .ds .chg.d{color:#ff4d4f;}
+
+/* progress card */
+.phone-b .card-list{padding:0 20px 8px;flex-shrink:0;}
+.phone-b .card{border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid #f0f0f0;cursor:pointer;transition:.15s;}
+.phone-b .card:active{transform:scale(.97);border-color:#667eea;}
+.phone-b .card .ct{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.phone-b .card .ct .cn{font-size:14px;font-weight:500;color:#1a1a1a;}
+.phone-b .card .ct .cs{font-size:13px;font-weight:600;color:#667eea;}
+.phone-b .card .cd{font-size:12px;color:#999;}
+.phone-b .card .cbar{height:3px;background:#f0f0f0;border-radius:2px;margin-top:6px;overflow:hidden;}
+.phone-b .card .cbar .cf{height:100%;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:2px;}
+
+/* quick entry at bottom */
+.phone-b .quick-bar{padding:8px 20px 16px;display:flex;gap:8px;flex-shrink:0;}
+.phone-b .quick-bar .qb{flex:1;padding:12px;border-radius:12px;text-align:center;font-size:13px;font-weight:500;cursor:pointer;}
+.phone-b .quick-bar .qb.prim{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;}
+.phone-b .quick-bar .qb.sec{background:#f5f6fa;color:#667eea;}
+
+.label{text-align:center;font-size:13px;font-weight:600;color:#333;margin-bottom:6px;padding:4px 0;}
+</style>
+</head>
+<body>
+
+<div>
+<div class="label">🎨 概念B · 能力看板优先</div>
+<div class="phone phone-b">
+  <div class="status-bar"><span>09:41</span><span>📶 🔋</span></div>
+  <div class="screen">
+    <div class="hero">
+      <div class="greeting">👋 早上好，张经理</div>
+      <div class="name">能力周报 · 本周进步 +8%</div>
+      <div class="score-row">
+        <div class="score-item"><div class="num">76</div><div class="lbl">综合能力</div><div class="change up">↑ 8</div></div>
+        <div class="score-item"><div class="num">12</div><div class="lbl">本周练习</div><div class="change up">↑ 3</div></div>
+        <div class="score-item"><div class="num">6</div><div class="lbl">连续达标</div><div class="change up">🔥</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="st"><span class="t">📊 能力维度变化</span><span class="more">查看详情 →</span></div>
+    </div>
+    <div class="dims">
+      <div class="dim-row">
+        <span class="dn">话术规范</span>
+        <div class="db">
+          <div class="fl" style="width:85%;background:#52c41a;"></div>
+        </div>
+        <span class="ds">85<span class="chg u">↑3</span></span>
+      </div>
+      <div class="dim-row">
+        <span class="dn">异议处理</span>
+        <div class="db">
+          <div class="fl" style="width:62%;background:#fa8c16;"></div>
+        </div>
+        <span class="ds">62<span class="chg u">↑8</span></span>
+      </div>
+      <div class="dim-row">
+        <span class="dn">促成技巧</span>
+        <div class="db">
+          <div class="fl" style="width:58%;background:#fa8c16;"></div>
+        </div>
+        <span class="ds">58<span class="chg d">↓2</span></span>
+      </div>
+      <div class="dim-row">
+        <span class="dn">共情能力</span>
+        <div class="db">
+          <div class="fl" style="width:70%;background:#52c41a;"></div>
+        </div>
+        <span class="ds">70<span class="chg u">↑5</span></span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="st"><span class="t">📋 推荐练习</span><span class="more"></span></div>
+    </div>
+    <div class="card-list">
+      <div class="card">
+        <div class="ct"><span class="cn">客户说"别家比你们便宜"</span><span class="cs">短板 ⚠️</span></div>
+        <div class="cd">异议处理 · 你的竞品应对能力偏弱，建议重点练习</div>
+        <div class="cbar"><div class="cf" style="width:45%;"></div></div>
+      </div>
+      <div class="card">
+        <div class="ct"><span class="cn">第三次面谈促成</span><span class="cs" style="color:#fa8c16;">待强化</span></div>
+        <div class="cd">促成签单 · 上次得分 55，练习 2 次可突破</div>
+        <div class="cbar"><div class="cf" style="width:30%;"></div></div>
+      </div>
+    </div>
+
+    <div class="quick-bar">
+      <div class="qb prim">🎙️ 开始练习</div>
+      <div class="qb sec">💬 AI 教练</div>
+    </div>
+  </div>
+</div>
+</div>
+
+</body>
+</html>

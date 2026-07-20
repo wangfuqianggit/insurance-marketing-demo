@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>个险AI营销助手 · 语音版</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-dark: #1d4ed8;
+  --primary-bg: #eff6ff;
+  --accent: #f59e0b;
+  --success: #10b981;
+  --danger: #ef4444;
+  --bg: #0f172a;
+  --card-bg: #1e293b;
+  --card-border: #334155;
+  --text: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-light: #64748b;
+  --gradient-start: #2563eb;
+  --gradient-end: #06b6d4;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif; background: #0a0f1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+
+.phone {
+  width: 390px; height: 844px; background: var(--bg); border-radius: 40px;
+  overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+  position: relative; display: flex; flex-direction: column;
+}
+.phone-notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 150px; height: 28px; background: #000; border-radius: 0 0 16px 16px; z-index: 100; }
+.phone-notch::before { content: ''; position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 8px; height: 8px; background: #1a1a2e; border-radius: 50%; }
+
+.status-bar { display: flex; justify-content: space-between; padding: 10px 24px 4px; font-size: 12px; font-weight: 600; color: #888; flex-shrink: 0; z-index: 50; }
+.status-bar .time { font-size: 14px; font-weight: 700; color: #aaa; }
+
+.app { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+
+/* Minimal Header */
+.v-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 20px; flex-shrink: 0; }
+.v-header .v-title { font-size: 16px; font-weight: 600; color: var(--text); }
+.v-header .v-status { font-size: 12px; color: var(--text-light); display: flex; align-items: center; gap: 5px; }
+.v-header .v-status .v-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--success); display: inline-block; }
+
+/* Main Content Area */
+.main-area {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 20px; position: relative;
+}
+
+/* Glanceable Info (shows when idle) */
+.glance-info { text-align: center; transition: all .5s ease; }
+.glance-info .gi-time { font-size: 52px; font-weight: 200; color: var(--text); letter-spacing: 2px; }
+.glance-info .gi-date { font-size: 15px; color: var(--text-light); margin-top: 4px; }
+.glance-info .gi-summary { margin-top: 20px; font-size: 18px; color: var(--text-secondary); line-height: 1.6; }
+.glance-info .gi-summary .num { color: var(--primary-light); font-weight: 700; font-size: 22px; }
+
+/* Voice Button */
+.voice-btn-wrap { position: relative; margin: 24px 0; }
+.v-btn {
+  width: 88px; height: 88px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px; color: #fff; cursor: pointer; border: none;
+  transition: all .3s ease;
+  box-shadow: 0 8px 32px rgba(37,99,235,0.25);
+  position: relative; z-index: 2;
+}
+.v-btn:active { transform: scale(0.92); }
+.v-btn.listening { box-shadow: 0 8px 40px rgba(37,99,235,0.5); }
+.v-btn .pulse-ring {
+  position: absolute; inset: -8px; border-radius: 50%;
+  border: 2px solid rgba(37,99,235,0.15);
+  animation: ringPulse 2s infinite;
+}
+@keyframes ringPulse { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.3); opacity: 0; } }
+
+.v-hint { font-size: 14px; color: var(--text-light); text-align: center; margin-top: 8px; transition: all .3s; }
+.v-hint .hint-cmd { display: inline-block; padding: 6px 16px; background: var(--card-bg); border-radius: 20px; margin: 4px; font-size: 13px; color: var(--text-secondary); border: 1px solid var(--card-border); cursor: pointer; }
+.v-hint .hint-cmd:active { background: var(--primary); color: #fff; }
+
+/* Waveform (listening state) */
+.waveform-area { display: none; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+.waveform-area.show { display: flex; }
+.waveform { display: flex; gap: 4px; align-items: center; height: 60px; }
+.waveform span {
+  width: 4px; border-radius: 2px; background: linear-gradient(to top, var(--gradient-start), var(--gradient-end));
+  animation: wave 1s ease-in-out infinite;
+}
+.waveform span:nth-child(1) { height: 20px; animation-delay: .0s; }
+.waveform span:nth-child(2) { height: 36px; animation-delay: .1s; }
+.waveform span:nth-child(3) { height: 50px; animation-delay: .2s; }
+.waveform span:nth-child(4) { height: 60px; animation-delay: .3s; }
+.waveform span:nth-child(5) { height: 50px; animation-delay: .4s; }
+.waveform span:nth-child(6) { height: 36px; animation-delay: .5s; }
+.waveform span:nth-child(7) { height: 20px; animation-delay: .6s; }
+.waveform span:nth-child(8) { height: 36px; animation-delay: .7s; }
+.waveform span:nth-child(9) { height: 50px; animation-delay: .8s; }
+.waveform span:nth-child(10) { height: 28px; animation-delay: .9s; }
+@keyframes wave { 0%,100% { transform: scaleY(0.5); opacity: 0.4; } 50% { transform: scaleY(1); opacity: 1; } }
+
+.listening-label { font-size: 15px; color: var(--text); font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.listening-label .dot-rec { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); animation: blink 1s infinite; }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+/* Transcription Panel */
+.transcript-panel { display: none; position: absolute; bottom: 0; left: 0; right: 0; background: var(--card-bg); border-radius: 20px 20px 0 0; padding: 20px; max-height: 50%; overflow-y: auto; border-top: 1px solid var(--card-border); animation: slideUp .3s ease; }
+.transcript-panel.show { display: block; }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.transcript-panel::-webkit-scrollbar { width: 0; }
+.tp-line { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; line-height: 1.6; }
+.tp-line:last-child { border-bottom: none; }
+.tp-line .who { font-weight: 600; }
+.tp-line .who.ai { color: var(--primary-light); }
+.tp-line .who.user { color: var(--accent); }
+.tp-line .who.sys { color: var(--success); }
+.tp-text { color: var(--text); }
+
+/* Quick command chips */
+.quick-chips { display: flex; gap: 8px; padding: 12px 20px; overflow-x: auto; flex-shrink: 0; scrollbar-width: none; }
+.quick-chips::-webkit-scrollbar { display: none; }
+.q-chip {
+  flex-shrink: 0; padding: 8px 18px; border-radius: 20px; font-size: 14px;
+  background: var(--card-bg); color: var(--text-secondary); border: 1px solid var(--card-border);
+  cursor: pointer; transition: all .2s; white-space: nowrap;
+}
+.q-chip:active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.q-chip.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* Toast */
+.toast { position: absolute; bottom: 100px; left: 20px; right: 20px; z-index: 999; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text); font-size: 14px; padding: 14px 20px; border-radius: 12px; text-align: center; opacity: 0; transform: translateY(20px); transition: all .3s; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 420px) { .phone { width: 100%; height: 100vh; border-radius: 0; } }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="phone-notch"></div>
+  <div class="status-bar"><span class="time" id="statusTime">9:41</span><span>●●●● ▮</span></div>
+
+  <div class="app">
+    <!-- Header -->
+    <div class="v-header">
+      <div class="v-title">🎧 个险AI助手</div>
+      <div class="v-status"><span class="v-dot"></span> 待命</div>
+    </div>
+
+    <!-- Main -->
+    <div class="main-area" id="mainArea">
+
+      <!-- Idle State: Glance Info -->
+      <div class="glance-info" id="glanceInfo">
+        <div class="gi-time" id="glanceTime">9:41</div>
+        <div class="gi-date">7月14日 星期二 · ☀️ 26°C</div>
+        <div class="gi-summary">
+          今天有 <span class="num">3</span> 位客户待拜访<br>
+          张建国 ⭐ · 王德峰 · 李美玲
+        </div>
+      </div>
+
+      <!-- Voice Button -->
+      <div class="voice-btn-wrap">
+        <button class="v-btn" id="voiceBtn" onclick="toggleVoice()">
+          🎤
+          <div class="pulse-ring"></div>
+        </button>
+      </div>
+
+      <div class="v-hint" id="voiceHint">
+        <span style="font-size:13px;color:var(--text-light);">试试说：</span><br>
+        <span class="hint-cmd" onclick="simVoiceCmd('今天有什么安排')">今天有什么安排</span>
+        <span class="hint-cmd" onclick="simVoiceCmd('准备张建国的建议书')">准备建议书</span>
+        <span class="hint-cmd" onclick="simVoiceCmd('优化拜访路线')">优化路线</span>
+      </div>
+
+      <!-- Waveform (Listening) -->
+      <div class="waveform-area" id="waveformArea">
+        <div class="listening-label"><span class="dot-rec"></span> 聆听中</div>
+        <div class="waveform">
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+
+      <!-- Transcript Panel -->
+      <div class="transcript-panel" id="transcriptPanel">
+        <div id="transcriptContent"></div>
+      </div>
+    </div>
+
+    <!-- Quick Chips -->
+    <div class="quick-chips">
+      <span class="q-chip primary" onclick="simVoiceCmd('今天有什么安排')">📅 今日安排</span>
+      <span class="q-chip" onclick="simVoiceCmd('准备张建国的建议书')">📄 建议书</span>
+      <span class="q-chip" onclick="simVoiceCmd('优化拜访路线')">🗺️ 路线</span>
+      <span class="q-chip" onclick="simVoiceCmd('开始拜访张建国')">🎤 开始拜访</span>
+      <span class="q-chip" onclick="simVoiceCmd('结束拜访生成小结')">📋 结束小结</span>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+// ========== Toast ==========
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ========== State ==========
+let isListening = false;
+let voiceTimeout = null;
+
+const glanceInfo = document.getElementById('glanceInfo');
+const voiceBtn = document.getElementById('voiceBtn');
+const voiceHint = document.getElementById('voiceHint');
+const waveformArea = document.getElementById('waveformArea');
+const transcriptPanel = document.getElementById('transcriptPanel');
+const transcriptContent = document.getElementById('transcriptContent');
+
+// ========== Voice Toggle ==========
+function toggleVoice() {
+  if (isListening) {
+    stopListening();
+  } else {
+    startListening();
+  }
+}
+
+function startListening() {
+  isListening = true;
+  voiceBtn.classList.add('listening');
+  voiceBtn.innerHTML = '⏹';
+  voiceBtn.querySelector('.pulse-ring')?.remove();
+  glanceInfo.style.opacity = '0.15';
+  voiceHint.style.display = 'none';
+  waveformArea.classList.add('show');
+  document.querySelector('.v-status').innerHTML = '🎤 聆听中...';
+
+  // Auto-stop after 8s demo
+  clearTimeout(voiceTimeout);
+  voiceTimeout = setTimeout(() => {
+    if (isListening) {
+      // Simulate hearing "今天有什么安排"
+      stopListening();
+      simVoiceResponse('schedule');
+    }
+  }, 4000);
+}
+
+function stopListening() {
+  isListening = false;
+  voiceBtn.classList.remove('listening');
+  voiceBtn.innerHTML = '🎤<div class="pulse-ring"></div>';
+  waveformArea.classList.remove('show');
+  voiceHint.style.display = 'block';
+  glanceInfo.style.opacity = '1';
+  document.querySelector('.v-status').innerHTML = '<span class="v-dot"></span> 待命';
+  clearTimeout(voiceTimeout);
+}
+
+// ========== Simulate Voice Command ==========
+function simVoiceCmd(cmd) {
+  if (isListening) stopListening();
+
+  // Show user said something
+  addTranscript('user', cmd);
+  showTranscriptPanel();
+
+  // Response
+  glanceInfo.style.opacity = '0';
+  voiceHint.style.display = 'none';
+
+  setTimeout(() => {
+    if (cmd.includes('安排') || cmd.includes('日程') || cmd.includes('今天')) {
+      simVoiceResponse('schedule');
+    } else if (cmd.includes('建议书') || cmd.includes('张建国')) {
+      simVoiceResponse('proposal');
+    } else if (cmd.includes('路线') || cmd.includes('导航')) {
+      simVoiceResponse('route');
+    } else if (cmd.includes('开始拜访')) {
+      simVoiceResponse('startVisit');
+    } else if (cmd.includes('结束') || cmd.includes('小结')) {
+      simVoiceResponse('summary');
+    } else if (cmd.includes('陪访') || cmd.includes('下午')) {
+      simVoiceResponse('coach');
+    } else if (cmd.includes('物料') || cmd.includes('准备')) {
+      simVoiceResponse('materials');
+    } else {
+      simVoiceResponse('unknown');
+    }
+  }, 600);
+}
+
+function simVoiceResponse(type) {
+  const responses = {
+    schedule: [
+      { who: 'ai', text: '好的，以下是今天的安排。' },
+      { who: 'ai', text: '上午9点拜访张建国，重疾续保沟通，在朝阳区建国路。' },
+      { who: 'ai', text: '上午11点拜访王德峰，保单到期提醒，在西城区金融街。' },
+      { who: 'ai', text: '下午2点有陪访，张建国那边主管老李会一起去。' },
+      { who: 'ai', text: '下午4点半拜访李美玲，新客户需求挖掘，在海淀区。' },
+      { who: 'ai', text: '需要我帮你准备什么吗？' },
+    ],
+    proposal: [
+      { who: 'ai', text: '已生成张建国的建议书，方案要点如下。' },
+      { who: 'ai', text: '推荐长城康健人生重疾险升级版，50万保额，20年缴，每年8650元。' },
+      { who: 'ai', text: '覆盖120种重疾、40种轻症、20种中症，轻症确诊可豁免后续保费。' },
+      { who: 'ai', text: '另外，他妻子7月20日生日，建议同步推荐女性重疾险，年缴3280元。' },
+      { who: 'ai', text: '方案已准备好，需要发送给客户还是导出PDF？' },
+    ],
+    route: [
+      { who: 'ai', text: '已优化路线方案，按这个顺序走最省时间。' },
+      { who: 'ai', text: '第一站张建国，从公司出发3.2公里，约8分钟车程。' },
+      { who: 'ai', text: '第二站王德峰，5公里，约12分钟。' },
+      { who: 'ai', text: '第三站李美玲，4.5公里，约11分钟。' },
+      { who: 'ai', text: '总里程12.7公里，建议8点20分出发避开早高峰。' },
+    ],
+    startVisit: [
+      { who: 'sys', text: '🎤 已进入拜访模式 · 张建国' },
+      { who: 'ai', text: '好的，开始记录拜访过程。建议打开话术助手，我会实时提供建议。' },
+      { who: 'ai', text: '记得提醒客户续保窗口期和妻子生日的保障方案。' },
+    ],
+    summary: [
+      { who: 'sys', text: '📋 拜访已结束，正在生成小结...' },
+      { who: 'ai', text: '拜访小结已生成。客户张建国，沟通时长1小时25分钟。' },
+      { who: 'ai', text: '核心结论：客户对升级版感兴趣，但想对比费率。妻子生日送礼需求明确。' },
+      { who: 'ai', text: '意向评估B+级，签单概率75%，预计保费1.2到2万每年。' },
+      { who: 'ai', text: '已自动生成跟进待办：今天发感谢消息，明天补发资料，7月20日生日祝福。' },
+    ],
+    coach: [
+      { who: 'ai', text: '下午2点的陪访已准备就绪。陪访人是主管李国强。' },
+      { who: 'ai', text: 'AI建议：李主管主谈，你辅助记录和产品展示。重点应对客户费率疑虑。' },
+      { who: 'ai', text: '利用妻子生日作为情感切入点，准备两套方案给客户选择。' },
+    ],
+    materials: [
+      { who: 'ai', text: '已识别5项物料：建议书已生成、生日贺卡已生成、女性重疾险单页已生成。' },
+      { who: 'ai', text: '保障缺口报告正在生成中，投保申请书已预填待打印。' },
+      { who: 'ai', text: '需要我帮你打包还是直接打印？' },
+    ],
+    unknown: [
+      { who: 'ai', text: '好的，我记下了。' },
+      { who: 'ai', text: '根据你的工作情况，建议你可以先看看今天的拜访安排。' },
+      { who: 'ai', text: '需要我帮你准备建议书或者优化拜访路线吗？' },
+    ],
+  };
+
+  const lines = responses[type] || responses.unknown;
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i >= lines.length) { clearInterval(interval); return; }
+    addTranscript(lines[i].who, lines[i].text);
+    transcriptContent.lastElementChild.scrollIntoView({ behavior: 'smooth' });
+    i++;
+  }, 1500);
+}
+
+// ========== Transcript ==========
+function addTranscript(who, text) {
+  const div = document.createElement('div');
+  div.className = 'tp-line';
+  const whoMap = { ai: 'AI', user: '你', sys: '系统' };
+  const whoClass = who === 'ai' ? 'ai' : who === 'user' ? 'user' : 'sys';
+  div.innerHTML = `<span class="who ${whoClass}">${whoMap[who] || '系统'}</span> <span class="tp-text">${text}</span>`;
+  transcriptContent.appendChild(div);
+}
+
+function showTranscriptPanel() {
+  transcriptPanel.classList.add('show');
+}
+
+function clearTranscript() {
+  transcriptContent.innerHTML = '';
+  transcriptPanel.classList.remove('show');
+  glanceInfo.style.opacity = '1';
+  voiceHint.style.display = 'block';
+}
+
+// Tap outside transcript to dismiss
+document.getElementById('mainArea').addEventListener('click', (e) => {
+  if (e.target.closest('.transcript-panel') || e.target.closest('.v-btn') || e.target.closest('.quick-chips')) return;
+  if (transcriptPanel.classList.contains('show')) {
+    clearTranscript();
+  }
+});
+
+// ========== Status Bar Time ==========
+function updateTime() {
+  const now = new Date();
+  const timeStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('statusTime').textContent = timeStr;
+  document.getElementById('glanceTime').textContent = timeStr;
+}
+updateTime();
+setInterval(updateTime, 30000);
+</script>
+</body>
+</html>

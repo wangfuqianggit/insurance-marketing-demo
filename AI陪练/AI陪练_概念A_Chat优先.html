@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>概念A - Chat优先</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;}
+body{background:#f0f2f5;display:flex;justify-content:center;align-items:center;min-height:100vh;gap:20px;padding:20px;flex-wrap:wrap;}
+.phone{width:360px;height:780px;background:#fff;border-radius:32px;box-shadow:0 10px 40px rgba(0,0,0,.12);overflow:hidden;display:flex;flex-direction:column;position:relative;}
+.status-bar{height:40px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:11px;color:#333;flex-shrink:0;}
+.screen{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
+.screen::-webkit-scrollbar{display:none;}
+
+/* A: Chat-first */
+.phone-a .chat-top{padding:16px 16px 8px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.phone-a .chat-top .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;}
+.phone-a .chat-top .info{flex:1;}
+.phone-a .chat-top .info .name{font-size:16px;font-weight:600;color:#1a1a1a;}
+.phone-a .chat-top .info .sub{font-size:12px;color:#999;}
+.phone-a .chat-top .menu{font-size:20px;color:#999;cursor:pointer;}
+.phone-a .chat-msgs{flex:1;padding:0 16px 12px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;}
+.phone-a .msg{max-width:88%;display:flex;gap:8px;}
+.phone-a .msg.ai{align-self:flex-start;}
+.phone-a .msg.user{align-self:flex-end;flex-direction:row-reverse;}
+.phone-a .msg .av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.phone-a .msg.ai .av{background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:#667eea;}
+.phone-a .msg.user .av{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;}
+.phone-a .msg .bub{padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.6;}
+.phone-a .msg.ai .bub{background:#f5f6fa;border-top-left-radius:4px;}
+.phone-a .msg.user .bub{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-top-right-radius:4px;}
+.phone-a .msg .bub .tool-btn{display:inline-block;padding:6px 14px;border-radius:8px;background:#fff;border:1px solid #e8e8e8;font-size:13px;color:#667eea;cursor:pointer;margin-top:6px;}
+.phone-a .chat-input{padding:10px 16px;border-top:1px solid #f0f0f0;display:flex;gap:8px;align-items:center;flex-shrink:0;}
+.phone-a .chat-input input{flex:1;padding:10px 16px;border-radius:24px;border:1px solid #e8e8e8;font-size:14px;outline:none;background:#f5f6fa;}
+.phone-a .chat-input input:focus{border-color:#667eea;background:#fff;}
+.phone-a .chat-input .plus,.phone-a .chat-input .mic{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;flex-shrink:0;color:#999;background:#f5f6fa;transition:.2s;}
+.phone-a .chat-input .send{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;flex-shrink:0;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;}
+.phone-a .suggestion-bar{padding:0 16px 8px;display:flex;gap:6px;overflow-x:auto;flex-shrink:0;}
+.phone-a .suggestion-bar::-webkit-scrollbar{display:none;}
+.phone-a .suggestion-bar .chip{padding:6px 14px;border-radius:16px;background:#f5f6fa;color:#666;font-size:12px;white-space:nowrap;cursor:pointer;border:1px solid #eee;flex-shrink:0;}
+
+/* labels */
+.label{text-align:center;font-size:13px;font-weight:600;color:#333;margin-bottom:6px;padding:4px 0;}
+</style>
+</head>
+<body>
+
+<div>
+<div class="label">🎨 概念A · Chat 优先</div>
+<div class="phone phone-a">
+  <div class="status-bar"><span>09:41</span><span>📶 🔋</span></div>
+  <div class="screen">
+    <div class="chat-top">
+      <div class="avatar">🤖</div>
+      <div class="info">
+        <div class="name">AI 教练</div>
+        <div class="sub">在线 · 已练习 8 次本周</div>
+      </div>
+      <div class="menu">⋯</div>
+    </div>
+    <div class="suggestion-bar">
+      <span class="chip">🔥 推荐：异议处理</span>
+      <span class="chip">📊 看我的能力</span>
+      <span class="chip">🎯 闯关模式</span>
+      <span class="chip">👥 团队看板</span>
+    </div>
+    <div class="chat-msgs">
+      <div class="msg ai">
+        <div class="av">🤖</div>
+        <div class="bub">早上好！你今天状态怎么样？<br>上次你练了"客户说太贵了"，异议处理从 62 → 78 分，进步很明显。要继续练这个场景，还是换个新的？</div>
+      </div>
+      <div class="msg user">
+        <div class="av">👤</div>
+        <div class="bub">换个新的吧，练一下转介绍</div>
+      </div>
+      <div class="msg ai">
+        <div class="av">🤖</div>
+        <div class="bub">好的，转介绍场景准备就绪。<br><br>📋 场景：老客户转介绍了一位朋友，对方有防备心理<br>🎯 目标：建立信任，获取面谈机会<br><br>准备好了随时开始👇</div>
+        <div class="bub" style="border:2px solid #667eea;background:#fff;margin-top:-4px;">
+          <div style="font-weight:600;margin-bottom:4px;">🎙️ 开始对练</div>
+          <div style="font-size:12px;color:#999;">预计 5-8 轮对话</div>
+          <div class="tool-btn">开始练习 →</div>
+        </div>
+      </div>
+      <div class="msg ai">
+        <div class="av">🤖</div>
+        <div class="bub" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+          <span style="font-size:12px;color:#666;">⬆️ 上次练习回顾</span><br>
+          你在"异议处理"维度的提升曲线：<br>📈 62 → 70 → 78（3次练习）<br>
+          <span style="font-size:12px;color:#667eea;">查看完整报告 →</span>
+        </div>
+      </div>
+    </div>
+    <div class="chat-input">
+      <span class="plus">+</span>
+      <input type="text" placeholder="输入消息或语音输入..." />
+      <span class="mic">🎤</span>
+      <span class="send">↑</span>
+    </div>
+  </div>
+</div>
+</div>
+
+</body>
+</html>

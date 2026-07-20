@@ -1,0 +1,2410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 陪练系统 - 演示原型</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;}
+body{background:#f0f2f5;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px;}
+.phone{width:390px;height:844px;background:#f5f6fa;border-radius:40px;box-shadow:0 20px 60px rgba(0,0,0,.15);overflow:hidden;display:flex;flex-direction:column;position:relative;}
+.status-bar{height:44px;background:linear-gradient(135deg,#5B52E5,#7C6FEA);display:flex;align-items:center;justify-content:space-between;padding:0 24px;color:#fff;font-size:12px;flex-shrink:0;}
+.app-header{height:50px;background:linear-gradient(135deg,#6C63FF,#8B7CFA);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;font-weight:600;flex-shrink:0;position:relative;}
+.app-header .back{position:absolute;left:8px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.2);border:none;color:#fff;font-size:20px;cursor:pointer;padding:2px 10px;border-radius:6px;display:none;}
+.app-header .back.show{display:block;}
+.app-content{flex:1;overflow-y:auto;background:#f5f6fa;}
+.app-content::-webkit-scrollbar{display:none;}
+.tab-bar{height:52px;border-top:1px solid #eee;display:flex;background:#fff;flex-shrink:0;}
+.tab-bar .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;color:#999;cursor:pointer;gap:1px;transition:.2s;}
+.tab-bar .tab.active{color:#6C63FF;}
+.tab-bar .tab .icon{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;font-size:16px;margin-bottom:1px;background:transparent;transition:.2s;}
+.tab-bar .tab.active .icon{background:linear-gradient(135deg,#eef2ff,#e0e7ff);}
+.ic{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);font-size:13px;flex-shrink:0;}
+.ic-sm{width:20px;height:20px;border-radius:5px;font-size:11px;}
+.ic-green{background:linear-gradient(135deg,#f0fdf4,#dcfce7);}
+.ic-orange{background:linear-gradient(135deg,#fff7ed,#ffedd5);}
+.ic-red{background:linear-gradient(135deg,#fff1f2,#fecdd3);}
+.ic-gold{background:linear-gradient(135deg,#fefce8,#fef9c3);}
+.screen{display:none;height:100%;flex-direction:column;}
+.screen.active{display:flex;}
+.page{padding:14px;}
+.stitle{font-size:15px;font-weight:600;color:#1a1a1a;margin:14px 0 8px;display:flex;align-items:center;gap:6px;}
+.stitle:first-child{margin-top:2px;}
+.bp0{background:#ff4d4f;color:#fff;font-size:10px;padding:1px 8px;border-radius:10px;font-weight:500;}
+.bp1{background:#faad14;color:#fff;font-size:10px;padding:1px 8px;border-radius:10px;font-weight:500;}
+.bp2{background:#52c41a;color:#fff;font-size:10px;padding:1px 8px;border-radius:10px;font-weight:500;}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:#6C63FF;}
+.sc{background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.05);cursor:pointer;transition:.15s;border:1px solid transparent;}
+.sc:active{transform:scale(.97);border-color:#6C63FF;}
+.sc .sct{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;}
+.sc .sct .nm{font-size:14px;font-weight:500;color:#1a1a1a;}
+.sc .scd{font-size:12px;color:#999;}
+.sc .sctag{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:9px 20px;border-radius:8px;font-size:14px;border:none;cursor:pointer;font-weight:500;transition:.15s;}
+.btnp{background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;}
+.btno{background:#fff;color:#6C63FF;border:1px solid #6C63FF;}
+.btnw{width:100%;}
+.btnl{padding:12px 24px;font-size:16px;}
+.msg{display:flex;gap:8px;max-width:90%;}
+.msg.ai{align-self:flex-start;}
+.msg.us{align-self:flex-end;flex-direction:row-reverse;}
+.msg .av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.msg.ai .av{background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:#6C63FF;}
+.msg.us .av{background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;}
+.msg .bub{padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.6;}
+.msg.ai .bub{background:#fff;border:1px solid #eee;border-top-left-radius:3px;}
+.msg.us .bub{background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;border-top-right-radius:3px;}
+.msg .bub .cmt{font-size:12px;color:#fa8c16;margin-top:5px;padding-top:5px;border-top:1px dashed #ffd591;}
+.msg .bub .cse{font-size:12px;color:#6C63FF;margin-top:3px;cursor:pointer;text-decoration:underline;}
+.msg.us .bub .cse{color:#fff;opacity:.85;}
+.rb{background:#fff;border-radius:12px;padding:16px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.rb .lb{font-size:12px;color:#999;margin-bottom:4px;}
+.rb .vl{font-size:24px;font-weight:700;color:#1a1a1a;}
+.rb .vl .u{font-size:14px;font-weight:400;color:#999;}
+.di{display:flex;align-items:center;gap:8px;padding:5px 0;}
+.di .dn{width:56px;font-size:13px;color:#666;flex-shrink:0;}
+.di .db{flex:1;height:7px;background:#f0f0f0;border-radius:4px;overflow:hidden;}
+.di .db .fl{height:100%;border-radius:4px;transition:1s;}
+.di .ds{width:28px;text-align:right;font-size:13px;font-weight:600;color:#1a1a1a;}
+/* history search */
+.hsearch{display:none;padding:8px 14px;background:#fff;border-bottom:1px solid #eee;gap:8px;align-items:center;}
+.hsearch.on{display:flex;}
+.hsearch input{flex:1;padding:7px 12px;border-radius:20px;border:1px solid #e8e8e8;font-size:14px;outline:none;background:#f5f6fa;}
+.hsearch input:focus{border-color:#6C63FF;background:#fff;}
+.fb{display:flex;gap:8px;padding:10px 14px;background:#fff;border-bottom:1px solid #eee;position:sticky;top:0;z-index:10;flex-wrap:wrap;align-items:center;}
+.fb.hide{display:none;}
+.fbtn{padding:5px 16px;border-radius:14px;font-size:13px;border:1px solid #ddd;background:#fff;color:#666;cursor:pointer;user-select:none;flex-shrink:0;}
+.fbtn.on{background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;border-color:#6C63FF;font-weight:500;}
+.fbtn.search-btn{padding:5px 10px;font-size:16px;}
+.ts{display:flex;background:#f0f0f0;border-radius:8px;padding:2px;margin:6px 14px;flex-shrink:0;}
+.ts .ti{flex:1;text-align:center;padding:6px 0;font-size:13px;border-radius:6px;cursor:pointer;color:#666;}
+.ts .ti.on{background:#fff;color:#5B52E5;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.tc{display:none;}
+.tc.on{display:block;}
+.ib{background:linear-gradient(135deg,#eef2ff,#e0e7ff);border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid #dde4ff;}
+.ib h2{font-size:18px;margin-bottom:3px;color:#4A42D4;}
+.ib p{font-size:13px;color:#666;line-height:1.5;}
+.qs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
+.qs .qi{background:#fff;border-radius:10px;padding:10px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.qs .qi .n{font-size:20px;font-weight:700;color:#5B52E5;}
+.qs .qi .l{font-size:11px;color:#999;margin-top:2px;}
+.ov{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:center;justify-content:center;}
+.ov.on{display:flex;}
+.ob{background:#fff;border-radius:16px;padding:24px;width:300px;text-align:center;}
+.ob h3{font-size:16px;margin-bottom:8px;}
+.ob p{font-size:13px;color:#999;margin-bottom:16px;}
+.ob .bt{display:flex;gap:10px;}
+.ob .bt .btn{flex:1;}
+.ch{display:flex;flex-direction:column;gap:12px;padding:8px 14px;}
+.el{text-align:center;padding:40px 20px;color:#bbb;font-size:14px;}
+.lc{display:flex;gap:8px;margin:12px 0;}
+.lc .lci{flex:1;padding:10px 6px;border-radius:10px;text-align:center;border:1.5px solid #e8e8e8;cursor:pointer;}
+.lc .lci.on{border-color:#6C63FF;background:linear-gradient(135deg,#eef2ff,#e0e7ff);}
+.lc .lci .lv{font-size:12px;color:#666;font-weight:500;}
+.lc .lci .ld{font-size:10px;color:#bbb;margin-top:2px;}
+.fg{margin-bottom:12px;}
+.fg label{display:block;font-size:13px;color:#666;margin-bottom:4px;font-weight:500;}
+.fg textarea{width:100%;padding:10px 12px;border:1px solid #e8e8e8;border-radius:8px;font-size:14px;outline:none;min-height:100px;resize:vertical;font-family:inherit;}
+.fg textarea:focus{border-color:#6C63FF;}
+.mg{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;}
+.mg .mi{background:#fff;border-radius:12px;padding:18px 12px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.05);cursor:pointer;transition:.15s;}
+.mg .mi:active{transform:scale(.96);}
+.mg .mi .mi-icon{font-size:26px;margin-bottom:4px;}
+.mg .mi .mi-nm{font-size:13px;color:#1a1a1a;font-weight:500;}
+.ag{background:#fff;border-radius:12px;padding:12px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.05);cursor:pointer;border:1px solid #eee;}
+.ag .agt{font-size:14px;font-weight:600;color:#1a1a1a;display:flex;align-items:center;gap:6px;}
+.ag .agt .scnum{font-size:11px;color:#999;font-weight:400;}
+.ag .ags{display:flex;gap:4px;margin-top:8px;}
+.ag .ags .asi{flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 0;background:#f5f6fa;border-radius:8px;}
+.ag .ags .asi .sv{font-size:18px;font-weight:700;}
+.ag .ags .asi .sd{font-size:10px;color:#999;margin-top:1px;}
+.up{color:#52c41a;}
+.dn{color:#ff4d4f;}
+.in{display:none;}
+/* typing animation */
+.typing{display:flex;gap:4px;padding:4px 0;align-items:center;}
+.typing .dot{width:6px;height:6px;background:#6C63FF;border-radius:50%;animation:pulse 1.2s infinite;}
+.typing .dot:nth-child(2){animation-delay:.2s;}
+.typing .dot:nth-child(3){animation-delay:.4s;}
+@keyframes pulse{0%,80%,100%{transform:scale(.4);opacity:.4;}40%{transform:scale(1);opacity:1;}}
+/* inline comment bubble */
+.cmt-bub{background:linear-gradient(135deg,#fff7ed,#ffedd5);border-radius:8px;padding:6px 10px;font-size:12px;line-height:1.5;color:#333;margin-top:6px;border:1px solid #ffd591;max-width:85%;}
+.cmt-bub .cmt-tag{color:#fa8c16;font-weight:500;}
+/* page transitions */
+.slide-in{animation:slideIn .25s ease forwards;}
+.slide-out{animation:slideOut .25s ease forwards;}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+@keyframes slideOut{from{transform:translateX(-30%);opacity:1;}to{transform:translateX(-100%);opacity:0;}}
+.slide-in-back{animation:slideInBack .25s ease forwards;}
+.slide-out-back{animation:slideOutBack .25s ease forwards;}
+@keyframes slideInBack{from{transform:translateX(-100%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+@keyframes slideOutBack{from{transform:translateX(30%);opacity:1;}to{transform:translateX(100%);opacity:0;}}
+/* toast */
+.toast{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-20px);background:#333;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:200;opacity:0;transition:all .3s ease;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* progress bar animate */
+.bar-anim{transition:width 1.2s ease-out;}
+.bar-anim-init{width:0!important;}
+/* voice wave bars */
+.wave-bars{display:inline-flex;gap:2px;align-items:center;height:16px;}
+.wave-bars .bar{width:3px;background:#6C63FF;border-radius:2px;animation:waveAnim .8s infinite ease-in-out;}
+.wave-bars .bar:nth-child(1){animation-delay:0s;height:6px;}
+.wave-bars .bar:nth-child(2){animation-delay:.1s;height:10px;}
+.wave-bars .bar:nth-child(3){animation-delay:.2s;height:14px;}
+.wave-bars .bar:nth-child(4){animation-delay:.3s;height:8px;}
+.wave-bars .bar:nth-child(5){animation-delay:.4s;height:12px;}
+@keyframes waveAnim{0%,100%{transform:scaleY(.4);}50%{transform:scaleY(1);}}
+/* loading spinner */
+.spinner{display:inline-flex;align-items:center;gap:8px;}
+.spinner .ring{width:20px;height:20px;border:2px solid #e0e7ff;border-top-color:#6C63FF;border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+/* cat filter scroll */
+.cat-scroll{display:flex;gap:4px;overflow-x:auto;padding:4px 0 8px;-webkit-overflow-scrolling:touch;}
+.cat-scroll::-webkit-scrollbar{display:none;}
+.cat-scroll .fbtn{flex-shrink:0;white-space:nowrap;}
+/* exam tower ladder */
+.tower{position:relative;display:flex;flex-direction:column;align-items:stretch;overflow:hidden;flex:1;background:linear-gradient(180deg,#eef2ff 0%,#fff7e6 40%,#fff 80%);}
+.tower-scroll{position:relative;z-index:2;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;padding:8px 14px 20px;}
+.tower-scroll::-webkit-scrollbar{display:none;}
+.tower-node{position:relative;z-index:2;display:flex;align-items:center;gap:8px;margin-bottom:2px;cursor:pointer;transition:transform .15s;}
+.tower-node:active{transform:scale(.95);}
+.tower-node.left{flex-direction:row;margin-right:auto;padding-left:24px;}
+.tower-node.right{flex-direction:row-reverse;margin-left:auto;padding-right:24px;}
+.tower-node .badge{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;position:relative;box-shadow:0 2px 6px rgba(0,0,0,.06);}
+.tower-node .badge.locked{background:#e8e8e8;color:#aaa;box-shadow:none;}
+.tower-node .badge.current{background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;box-shadow:0 2px 10px rgba(108,99,255,.4);animation:pulseBadge 2s infinite;}
+.tower-node .badge.passed{background:linear-gradient(135deg,#52c41a,#73d13d);color:#fff;box-shadow:0 2px 6px rgba(82,196,26,.3);}
+.tower-node .lv-info{flex:1;max-width:200px;}
+.tower-node .lv-info .lv-name{font-size:13px;font-weight:600;color:#333;}
+.tower-node .lv-info .lv-name.locked{color:#bbb;}
+.tower-node .lv-stars{display:flex;gap:2px;font-size:14px;}
+.tower-node .lv-stars .lit{color:#faad14;}
+.tower-node .lv-stars .dim{color:#d9d9d9;}
+.tower-line{position:relative;z-index:1;height:20px;width:3px;}
+.tower-line.left-line{margin-left:46px;border-radius:1px;background:linear-gradient(180deg,#b7eb8f,#6C63FF);}
+.tower-line.right-line{margin-right:46px;margin-left:auto;border-radius:1px;background:linear-gradient(180deg,#6C63FF,#b7eb8f);}
+.tower-line.locked-line{background:#ddd!important;}
+.tower-line .line-dot{position:absolute;width:10px;height:10px;border-radius:50%;left:-3px;background:#6C63FF;}
+/* level detail panel */
+.lv-detail{padding:14px;}
+.lv-hero{text-align:center;padding:20px 16px;background:linear-gradient(135deg,#f0f5ff,#e0e7ff);border-radius:16px;margin-bottom:14px;}
+.lv-hero .hero-icon{font-size:40px;margin-bottom:6px;}
+.lv-hero .hero-title{font-size:16px;font-weight:700;color:#333;}
+.lv-hero .hero-stars{display:flex;justify-content:center;gap:6px;margin-top:8px;font-size:20px;}
+.diff-card{border-radius:12px;padding:14px;margin-bottom:10px;border:1.5px solid #e8e8e8;transition:all .2s;}
+.diff-card.available{border-color:#6C63FF;background:#f8f7ff;}
+.diff-card.passed{border-color:#b7eb8f;background:#f6ffed;}
+.diff-card.locked{opacity:.45;}
+.diff-card .diff-label{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;margin-bottom:6px;}
+.diff-card .diff-label.easy{background:#f6ffed;color:#52c41a;}
+.diff-card .diff-label.mid{background:#fff7e6;color:#fa8c16;}
+.diff-card .diff-label.hell{background:#fff1f2;color:#ff4d4f;}
+.diff-card .diff-name{font-size:14px;font-weight:600;color:#333;}
+.diff-card .diff-threshold{font-size:12px;color:#999;margin-top:4px;}
+.diff-card .diff-score{font-size:15px;font-weight:700;color:#52c41a;margin-top:4px;}
+.diff-card .diff-btn{display:inline-block;padding:8px 20px;border-radius:20px;font-size:13px;cursor:pointer;margin-top:8px;}
+.diff-card .diff-btn.go{background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;}
+.diff-card .diff-btn.nogo{background:#f0f0f0;color:#999;cursor:default;}
+.diff-card .diff-lock{font-size:12px;color:#999;margin-top:6px;}
+/* empty state */
+.empty-state{text-align:center;padding:40px 20px;color:#bbb;}
+.empty-state .empty-icon{font-size:48px;margin-bottom:8px;opacity:.6;}
+.empty-state .empty-text{font-size:14px;margin-bottom:12px;}
+.empty-state .btn{font-size:13px;padding:8px 16px;}
+@media(max-width:420px){body{padding:0;background:#fff;}.phone{width:100%;height:100vh;border-radius:0;box-shadow:none;}}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<div class="phone" id="app">
+  <div class="status-bar"><span>09:41</span><span>📶 🔋 100%</span></div>
+  <div class="app-header"><button class="back" id="backBtn" onclick="goback()">‹</button><span id="htitle">AI 陪练</span></div>
+  <div class="app-content" id="ac">
+    <!-- HOME -->
+    <div class="screen active" id="s0">
+      <div class="page">
+        <div class="ib"><h2><span class="ic">🏋️</span> AI 陪练</h2><p>7×24 小时"AI客户"陪你练，练完有评分、有点评、有示范、能追问</p></div>
+        <div class="qs"><div class="qi"><div class="n">8</div><div class="l">本月练习</div></div><div class="qi"><div class="n">76</div><div class="l">平均分</div></div><div class="qi"><div class="n">↑12</div><div class="l">较上月</div></div></div>
+        <button class="btn btnp btnw btnl" onclick="resetCreatePage();setTitle('创建自定义场景');showPage('s10')" style="margin-bottom:10px;"><span class="ic ic-sm">✏️</span> 创建自定义场景</button>
+        <div class="ts" id="sceneTab" style="margin-bottom:6px;">
+          <div class="ti on" onclick="switchStab('preset')">📂 预设场景 <span style="font-size:10px;color:#999;">32</span></div>
+          <div class="ti" onclick="switchStab('my')">📋 我的场景 <span style="font-size:10px;color:#999;" id="msc2">0</span></div>
+        </div>
+        <div id="presetSec">
+          <div id="sl"></div>
+        </div>
+        <div id="mySec" style="display:none;">
+          <div id="msl"></div>
+        </div>
+      </div>
+    </div>
+    <!-- DETAIL -->
+    <div class="screen" id="s1"><div class="page" id="s1c"></div></div>
+    <!-- CHAT -->
+    <div class="screen" id="s2">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#fff;border-bottom:1px solid #eee;flex-shrink:0;">
+        <span id="chatn" style="font-size:14px;font-weight:500;">对练中</span>
+        <button class="btn btno" style="padding:4px 12px;font-size:12px;" onclick="document.getElementById('endOV').classList.add('on')">结束对练</button>
+      </div>
+      <div id="chatProgress" style="padding:4px 14px;background:#fff;border-bottom:1px solid #eee;flex-shrink:0;font-size:11px;color:#999;text-align:center;"></div>
+      <div id="chatmsgs" class="ch" style="flex:1;overflow-y:auto;"></div>
+      <div style="display:flex;gap:6px;padding:8px 10px;background:#fff;border-top:1px solid #eee;flex-shrink:0;align-items:center;" id="chatInputArea">
+        <!-- Text mode -->
+        <div id="textMode" style="display:flex;gap:6px;flex:1;align-items:center;">
+          <input id="chatInput" type="text" placeholder="输入你的回答..." style="flex:1;padding:8px 12px;border:1px solid #e8e8e8;border-radius:20px;font-size:14px;outline:none;" onkeydown="if(event.key==='Enter')sendMsg()">
+          <span onclick="switchVoiceMode()" style="width:36px;height:36px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#f0f0f0;cursor:pointer;font-size:18px;flex-shrink:0;transition:.2s;color:#666;" title="语音输入">🎤</span>
+          <button class="btn btnp" style="padding:8px 16px;border-radius:20px;" onclick="sendMsg()">发送</button>
+        </div>
+        <!-- Voice mode -->
+        <div id="voiceMode" style="display:none;gap:6px;flex:1;align-items:center;">
+          <span onclick="switchTextMode()" style="width:36px;height:36px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#f0f0f0;cursor:pointer;font-size:16px;flex-shrink:0;color:#666;">⌨️</span>
+          <div id="holdBtn" onmousedown="startRecord()" onmouseup="stopRecord()" onmouseleave="cancelRecord()" ontouchstart="startRecord()" ontouchend="stopRecord()" ontouchcancel="cancelRecord()" style="flex:1;padding:8px 0;border-radius:20px;background:#f5f6fa;border:1px solid #e8e8e8;text-align:center;font-size:14px;color:#999;cursor:pointer;user-select:none;transition:.15s;">按住说话</div>
+        </div>
+      </div>
+      <!-- Recording overlay -->
+      <div id="recOverlay" style="display:none;position:absolute;bottom:70px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:12px 24px;border-radius:20px;font-size:14px;z-index:50;pointer-events:none;white-space:nowrap;">
+        🎤 录音中... <span id="recAnim">▌</span>
+      </div>
+    </div>
+    <!-- REPORT -->
+    <div class="screen" id="s3">
+      <div class="ts" id="rts"><div class="ti on" onclick="swt('r',0)"><span class="ic ic-sm">📊</span> 报告</div><div class="ti" onclick="swt('r',1)"><span class="ic ic-sm">💬</span> 对话</div></div>
+      <div style="flex:1;overflow-y:auto;">
+        <div class="tc on" id="rt0"><div class="page" id="rpt"></div></div>
+        <div class="tc" id="rt1"><div class="page" id="dpt"></div></div>
+      </div>
+    </div>
+    <!-- HISTORY -->
+    <div class="screen" id="s4">
+      <div class="fb" id="hfb"></div>
+      <div class="hsearch" id="hsearch">
+        <input id="hsearchInput" type="text" placeholder="搜索场景名称、评分..." oninput="searchHL()">
+        <span onclick="closeSearchHL()" style="font-size:14px;color:#999;cursor:pointer;padding:4px 8px;">✕</span>
+      </div>
+      <div class="page" id="hl"></div>
+    </div>
+    <!-- AGGREGATE -->
+    <div class="screen" id="s5"><div class="page" id="agc"></div></div>
+    <!-- COMPARE -->
+    <div class="screen" id="s6"><div class="page" id="cpc"></div></div>
+    <!-- CREATE SCENARIO -->
+    <div class="screen" id="s10">
+      <div class="page">
+        <p style="font-size:13px;color:#999;margin-bottom:12px;">用自然语言描述你想练习的场景，AI 自动生成客户画像和行为规则。</p>
+        <div class="fg"><label>场景描述</label><textarea id="scInput" placeholder='例如：&#10;"我想练一个企业主客户，50岁左右，做建材生意的，年营收大概500万..."'>我想练一个企业主客户，50岁左右，做建材生意的，年营收大概500万，之前买过一些保险但是都是人情单，现在想认真看看保障够不够。这个客户比较精明，会问很多专业问题，性格比较直接不耐烦那种。</textarea></div>
+        <button class="btn btnp btnw" onclick="genSc()"><span class="ic ic-sm">🤖</span> AI 生成场景</button>
+        <div id="gprev" class="in" style="margin-top:14px;"></div>
+      </div>
+    </div>
+    <!-- KNOWLEDGE -->
+    <div class="screen" id="s8"><div class="page"><div class="mg" id="kmg"></div></div></div>
+    <!-- ASSESSMENT -->
+    <div class="screen" id="s9"><div id="exm" style="display:flex;flex-direction:column;height:100%;"></div></div>
+    <!-- GROWTH -->
+    <div class="screen" id="s11"><div class="page" id="grc"></div></div>
+    <!-- ADMIN -->
+    <div class="screen" id="s12"><div class="page" id="adc"></div></div>
+  </div>
+  <div class="tab-bar" id="tb">
+    <div class="tab on" data-t="home" onclick="swtch('home')"><span class="icon">🏠</span>对练</div>
+    <div class="tab" data-t="hist" onclick="swtch('hist')"><span class="icon">📋</span>记录</div>
+    <div class="tab" data-t="exam" onclick="swtch('exam')"><span class="icon">🎯</span>闯关</div>
+    <div class="tab" data-t="me" onclick="swtch('me')"><span class="icon">👤</span>我的</div>
+  </div>
+  <div class="ov" id="endOV">
+    <div class="ob"><h3>结束对练</h3><p>确定结束本次对练？系统将自动生成评估报告。</p><div class="bt"><button class="btn btno" onclick="document.getElementById('endOV').classList.remove('on')">继续练习</button><button class="btn btnp" onclick="confirmEnd()">结束并查看报告</button></div></div>
+  </div>
+  <div class="ov" id="modal" onclick="this.classList.remove('on')">
+    <div class="ob" style="text-align:left;width:340px;max-height:70vh;overflow-y:auto;" onclick="event.stopPropagation()">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><h3 id="modalTitle">详情</h3><span style="font-size:20px;cursor:pointer;" onclick="document.getElementById('modal').classList.remove('on')">✕</span></div>
+      <div id="modalBody" style="font-size:13px;line-height:1.6;color:#333;"></div>
+    </div>
+  </div>
+</div>
+<script>
+// DATA
+const cats = ['获客破冰','需求分析','产品讲解','异议处理','促成签单','售后服务','增员面谈','高端客户','复杂异议','特殊场景'];
+const dims = ['话术规范','销售逻辑','共情能力','异议处理','促成技巧','合规表现'];
+let curRptPcts=[80,70,75,68,72,90];
+const SC = [
+  {id:'S01',n:'客户说"太贵了"',c:'异议处理',p:1,s:3,d:'客户对方案认可但觉得价格高，需要做价值重塑'},
+  {id:'S02',n:'客户说"我已经有保险了"',c:'异议处理',p:1,s:3,d:'客户认为自己保障足够，需要做缺口分析'},
+  {id:'S03',n:'客户说"我再想想/和家人商量"',c:'促成签单',p:1,s:3,d:'每次到签单环节就犹豫，需要挖掘真实原因'},
+  {id:'S04',n:'重疾险产品讲解',c:'产品讲解',p:1,s:2,d:'客户对保险完全不了解，需通俗讲解重疾险'},
+  {id:'S05',n:'客户说"保险都是骗人的"',c:'异议处理',p:1,s:4,d:'客户身边有理赔拒赔案例，对保险极度不信任'},
+  {id:'S06',n:'缘故客户首次面谈',c:'获客破冰',p:2,s:2,d:'认识多年的邻居/朋友，从未聊过保险，需自然切入'},
+  {id:'S07',n:'转介绍首次接触',c:'获客破冰',p:2,s:2,d:'通过老客户介绍认识，对方有防备心理'},
+  {id:'S08',n:'保单整理/检视邀约',c:'获客破冰',p:2,s:2,d:'客户在多家公司买过保险，搞不清保障内容'},
+  {id:'S09',n:'家庭保障需求分析',c:'需求分析',p:2,s:3,d:'理性客户，喜欢用数据说话，需要完整的需求分析'},
+  {id:'S10',n:'企业主需求分析',c:'需求分析',p:2,s:4,d:'企业主客户，需分析经营风险和个人风险'},
+  {id:'S11',n:'年金险产品讲解',c:'产品讲解',p:2,s:3,d:'即将退休的客户，关心养老和利率下行'},
+  {id:'S12',n:'百万医疗险讲解',c:'产品讲解',p:2,s:2,d:'年轻客户，体检发现问题后开始关注保险'},
+  {id:'S13',n:'增额终身寿讲解',c:'产品讲解',p:2,s:4,d:'高净值客户，关注资产传承和税务规划'},
+  {id:'S14',n:'"我要查一下你们公司"',c:'异议处理',p:2,s:3,d:'客户没听过保险公司名字，对品牌有疑虑'},
+  {id:'S15',n:'"别家比你们便宜"',c:'异议处理',p:2,s:4,d:'客户手上有竞品方案，做横向对比'},
+  {id:'S16',n:'"网上买更便宜"',c:'异议处理',p:2,s:3,d:'客户在支付宝/微信看到更便宜的同类产品'},
+  {id:'S17',n:'"等我有钱了再买"',c:'异议处理',p:2,s:2,d:'年轻客户经济压力大，觉得保险是有钱人的事'},
+  {id:'S18',n:'第三次面谈促成',c:'促成签单',p:2,s:4,d:'已面谈2次，方案满意但就是拖着不签'},
+  {id:'S19',n:'增员面谈（犹豫型）',c:'增员面谈',p:2,s:3,d:'对现状不满但对保险行业有偏见'},
+  {id:'S20',n:'增员面谈（有经验者）',c:'增员面谈',p:2,s:3,d:'曾经做过保险但离职了，需要重建信心'},
+  {id:'S21',n:'企业主资产传承规划',c:'高端客户',p:3,s:5,d:'企业主5000万身价，需架构设计和资产传承方案'},
+  {id:'S22',n:'高净值家庭综合方案',c:'高端客户',p:3,s:5,d:'双人面谈，夫妻对保险认知和需求有分歧'},
+  {id:'S23',n:'大额保单面谈',c:'高端客户',p:3,s:5,d:'年缴50万+的大单，客户用陷阱问题测试专业度'},
+  {id:'S24',n:'家人强烈反对买保险',c:'复杂异议',p:3,s:4,d:'自己想买但家人坚决反对，需要迂回处理'},
+  {id:'S25',n:'曾被拒保/加费',c:'复杂异议',p:3,s:4,d:'以前投保被加费或拒保，对保险有怨气'},
+  {id:'S26',n:'退保亏损后的客户',c:'复杂异议',p:3,s:5,d:'以前退保亏了钱，对保险极度不信任'},
+  {id:'S27',n:'续保沟通',c:'售后服务',p:3,s:2,d:'续保时保费上涨，客户不理解需要解释'},
+  {id:'S28',n:'理赔咨询安抚',c:'售后服务',p:3,s:3,d:'客户出险后理赔材料不齐，焦急等待中'},
+  {id:'S29',n:'加保/转介绍开发',c:'售后服务',p:3,s:3,d:'老客户理赔体验好，适合开发加保和转介绍'},
+  {id:'S30',n:'产说会后跟进',c:'特殊场景',p:3,s:3,d:'产说会上签了预约单，回家冷静后犹豫'},
+  {id:'S31',n:'夫妻意见不一致',c:'特殊场景',p:3,s:4,d:'夫妻双方对买保险意见相左，需要调和'},
+  {id:'S32',n:'理赔纠纷处理',c:'特殊场景',p:3,s:5,d:'客户对理赔金额不满，情绪激动要投诉'},
+];
+const scripts = {
+  '客户说"太贵了"':{a:['张姐您好！上次聊的方案回去考虑得怎么样了？','嗯，方案我看了，保障内容挺好的，但是一年要交一万五千八，有点贵了。','嗯...这样算好像还好。但是闺蜜上个月也买了一份重疾险，比你们便宜三千块呢。','这个我倒没仔细看过...那理赔呢？','嗯，你说得也有道理。那万一以后交不起了怎么办？'],c:['✅ 主动跟进，态度积极','❌ 直接建议减保——先共情再处理异议','✅ 化整为零，好方法，但漏掉了客户闺蜜的竞品对比','⚠️ 可以补充：《保险法》规定符合条件必须赔','✅ 解除后顾之忧，专业'],
+    cases:[[],
+      ['优秀代理人王姐的回应：张姐，我特别理解您觉得贵的心情。不过50万保额摊到一天才43块钱，一杯咖啡的钱换来50万的保障，您觉得这样是不是更划算？'],
+      ['销冠李哥的竞品应对：先认可客户信息——"您闺蜜买的确实不错，不过保障侧重点不同。我帮您做一个对比分析，您看看差异在哪里。"','培训部张讲师：不要否定客户信息来源，而是借机展示专业度——"您闺蜜买的哪家公司？我来看看她的方案和我们的有什么不同。"'],
+      ['合规话术参考：《保险法》第23条规定，保险公司应在30日内作出核定。您可以告诉客户：理赔有法律保障，所有保险公司都受国家严格监管。'],
+      ['轻症豁免话术：这款产品有轻症豁免功能，万一交费期间出险，后面的保费不用交了，保障依然有效。您就不用担心交不起的问题了。']]},
+  '重疾险产品讲解':{a:['你好，我想给宝宝买个保险，闺蜜说重疾险很重要。','重疾险？那是啥？跟医保有什么区别？','那这个怎么赔？确诊就赔吗？','那我自己需要买吗？我身体挺好的。','好吧，那先看看方案？大概多少钱？'],c:['✅ 自然开场','✅ 用通俗比喻讲清核心概念','✅ 讲清给付型和报销型的区别','❌ 没讲"先大人后小孩"的重要原则','✅ 引导出具体方案'],
+    cases:[[],
+      ['通俗讲解法：重疾险就是确诊合同约定的重大疾病，保险公司直接给一笔钱。像鱼缸有个水泵在抽水，重疾险就是补水的那个，医保是治病的。'],
+      ['给付型和报销型的区别：医保是报销型——先花钱再拿发票报。重疾险是给付型——确诊就赔，不管花多少。就像伞和雨衣，下雨都能用，但用法不一样。'],
+      ['"先大人后小孩"原则：买保险先保家庭支柱，大人才是孩子最大的保障。万一大人出事，孩子保费都没人交。建议您先给自己配上，再给宝宝加。'],
+      []]},
+  '客户说"我已经有保险了"':{a:['你好，我其实已经买过保险了，应该不需要再看了吧？','前年买的重疾险，20万保额，一年交六千多。还有公司的补充医疗。','嗯...公司那个是团体险，离职了就没有了。重疾20万确实不算高。','你说的也有道理。那我还缺什么？','行吧，那你帮我看看，需要补充哪些？'],c:['✅ 礼貌开场，建立信任','✅ 了解客户已有保障，但需要进一步做缺口分析','⚠️ 指出团体险和重疾保额不足方向正确，但语气可以更温和','✅ 成功激发客户兴趣，主动询问缺口','✅ 引导客户进入需求分析阶段'],
+    cases:[[],
+      ['缺口分析话术：您的重疾20万确实有，但按照现在的医疗费用水平，一场大病平均花费30-50万。建议至少补充到50万保额，这样才真正能解决问题。'],
+      ['团体险应对：公司的团体险是好福利，但离职了就没有了。万一身体出了问题不能工作，团体险也断了，这时候个人重疾才是真正的兜底保障。'],
+      ['需求分析引导：买保险不是买了就行，要看保额够不够、保障全不全。我帮您做一个免费的保单检视，看看哪些地方还需要补充。'],
+      []]},
+  '客户说"我再想想/和家人商量"':{a:['你讲的我都懂了，方案也挺好的，但是我还是想回去跟老婆商量一下。','也不是不认可，就是买保险是大事，不能我一个人说了算。','嗯...她可能觉得一年一万多有点多吧。','你说得也对，但万一她不同意怎么办？','好吧，那你觉得我该咋跟她说比较好？'],c:['❌ 没有追问真实原因——客户说商量通常是表面理由，需挖掘真实顾虑','✅ 肯定客户想法，理解家庭决策需共识','⚠️ 挖出了价格顾虑，但没有进一步化解','✅ 客户表达了真实担忧，这是推进的好时机','✅ 客户主动寻求建议，信任建立成功'],
+    cases:[[],
+      ['PSS促成法：先理解（P）——"我完全理解您想跟家人商量的想法。"再支持（S）——"这确实是家庭共同决定的事。"最后推进（S）——"不过您太太最关心的是哪方面呢？我帮您准备材料您带回去讲清楚。"'],
+      ['家庭沟通话术：很多客户太太不是反对买保险，而是担心被骗或觉得不着急。可以告诉太太这是30年的保障，早买一年保费更低，而且现在身体好容易通过核保。'],
+      ['减压话术：如果觉得年缴压力大，可以考虑月缴方式，一个月才一千出头，少出去吃几顿饭就有了。太太知道了也不会觉得负担重。'],
+      []]},
+  '客户说"保险都是骗人的"':{a:['别跟我提保险，都是骗人的。我邻居买了几年，生病了去理赔，保险公司找各种理由不赔。','你说得轻巧，真到理赔的时候就不是那么回事了。','那你说我邻居怎么回事？他那个重疾险，确诊癌症了都不赔！','哼...你说的跟唱的一样好听。那你怎么保证到我这就能赔？','唉...行吧，那你说说我邻居那个到底是咋回事？'],c:['✅ 没有当场反驳，先让客户表达情绪——正确处理方式','❌ 空泛承诺不如具体解释，客户要的是原因不是安慰','⚠️ 开始追问具体原因，方向对了，但需分析理赔被拒的几种可能','❌ 面对质疑缺乏具体案例和数据支撑','✅ 客户情绪缓和，开始愿意了解，这是转折点'],
+    cases:[[],
+      ['理赔三步分析法：第一步看险种（重疾还是医疗），第二步看是否在等待期内，第三步看是否如实告知既往症。绝大多数拒赔都是这三个原因之一，逐个排查就能找到答案。'],
+      ['信任重建话术：您邻居的遭遇我听着也气愤。不过拒赔原因就那么几种——没如实告知、不在保障范围、等待期内出险。您邻居具体是哪种？我来帮您分析。'],
+      ['数据说话：2023年银保监会数据，重疾险行业平均获赔率97.6%，一百个人里97个都赔了。少数拒赔的，绝大多数是因为投保时没如实告知病史。所以买保险最重要的就是如实告知。'],
+      []]},
+  '缘故客户首次面谈':{a:['好久不见！最近忙啥呢？','我不错！就是最近房贷利率降了，想着要不要提前还点。','是啊，现在利率越来越低，钱放银行也不值钱。','保险？我买了一些啊，你有好产品？','嗯...听起来不错，你说说看具体是啥？'],c:['✅ 自然破冰，从生活话题切入','✅ 关注客户实际生活话题，建立共鸣','⚠️ 可以自然过渡到资产配置话题，但需更自然地引出保险','✅ 客户主动问产品，是好的信号','✅ 客户有兴趣，可以开始正式讲解'],
+    cases:[[],
+      ['自然过渡话术：利率下行钱放银行确实不划算。其实增额终身寿这类产品长期收益比银行高，还能锁定利率、隔离风险，也是一种资产配置方式。'],
+      ['破冰转话题：不瞒你说，我最近在学家庭资产配置方面的知识，发现很多人只关注收益，忽略了风险保障。就像开车光想着跑得快，刹车也得有才行。'],
+      ['缘故转专业：老张，咱这么多年的朋友了，我就不跟你绕弯子。我现在做保险咨询，帮人做家庭保障规划的。哪天我帮你看看家里的保障有什么需要补充的？'],
+      []]},
+  '转介绍首次接触':{a:['你好，是刘姐让我联系你的，说你对保险感兴趣？','嗯，是刘姐介绍的，不过我对保险不太了解，有点犹豫。','我听刘姐说你服务很专业，但我还是想先了解一下。','那你能简单说说，保险到底能解决什么问题？','行，那我先听听，不急着买。'],c:['✅ 利用转介绍建立初步信任','⚠️ 客户有防备，需先消除疑虑再深入','✅ 客户愿意了解，是推进的好时机','⚠️ 需要更通俗地讲保险价值','✅ 客户同意继续了解，达成首次面谈目标'],
+    cases:[[],
+      ['转介绍信任建立：刘姐是我服务的客户，她觉得这个方案对她家帮助很大，所以才推荐我联系您。我对每位客户都一样认真负责。'],
+      ['消除防备话术：我理解您的顾虑。买保险确实不是小事，不着急做决定。今天咱们就是聊聊，看看您的家庭保障有没有什么缺口，了解清楚了再做决定也不迟。'],
+      ['通俗讲解：保险说白了就是用一小部分钱，转移可能的大风险。就像开车必须买保险一样，人的健康和生命更需要保障。'],
+      []]},
+  '家庭保障需求分析':{a:['你好，我想了解一下保险，但不知道该买什么。','我35岁，老公38岁，孩子5岁，家庭年收入20万。','目前只有社保，没买过商业保险。','房贷还有150万，每月还款8000多。','那你觉得我们家最需要什么保障？'],c:['✅ 客户主动咨询，是理想开场','✅ 收集了家庭基本信息，好习惯','⚠️ 社保保障不足，需要详细分析缺口','✅ 了解到房贷压力，这是关键风险点','✅ 客户信任建立，进入方案推荐阶段'],
+    cases:[[],
+      ['信息收集：买保险第一步就是了解您的家庭情况。年龄、收入、负债、现有保障——这些决定了您的风险缺口在哪里。'],
+      ['社保缺口分析：社保是好基础，但有大缺口——重疾只赔基本医疗费，自费药和康复费用不覆盖。建议用商业保险补上缺口。'],
+      ['房贷风险：150万房贷是您家最大的风险敞口。万一家庭支柱出事，房贷谁来还？保险的核心就是确保这个缺口有人兜底。'],
+      []]},
+  '年金险产品讲解':{a:['你好，我今年55岁，想了解一下养老方面的保险。','退休后靠养老金，感觉不太够。朋友说年金险不错。','年金险是什么？跟银行存款有什么区别？','那收益率怎么样？能跑赢通胀吗？','听起来还行，但我担心万一中途需要用钱怎么办？'],c:['✅ 客户有明确需求，开场顺利','✅ 直击养老焦虑，切中客户痛点','⚠️ 需要更通俗地解释年金险原理','⚠️ 收益率解释需注意合规，不能承诺具体收益','✅ 解除流动性顾虑，推进成交'],
+    cases:[[],
+      ['养老缺口分析：目前城镇职工平均退休金约3000元/月，而退休后维持体面生活至少需要5000-8000元/月。缺口至少2000-5000元/月，年金险就是补这个缺口的。'],
+      ['通俗解释：年金险就像给自己建一个"养老金水库"，年轻时往里蓄水，退休后每年稳定放水。跟银行存款的区别是：利率锁定、终身领取、不会被挪用。'],
+      ['合规话术：年金险有保底利率，长期收益稳健。不过我们不能承诺具体收益率，建议您看产品说明书中的演示数据。'],
+      []]},
+  '百万医疗险讲解':{a:['你好，我最近体检发现甲状腺有个结节，医生说需要随访。','有点担心，想了解一下医疗险能不能覆盖。','百万医疗险？保额那么高，保费是不是很贵？','那免赔额1万是什么意思？是不是1万以内不赔？','那甲状腺结节这个情况能买吗？'],c:['✅ 客户有健康触发事件，切入点好','⚠️ 需要先安抚焦虑再讲解产品','✅ 价格优势讲清楚了','⚠️ 免赔额解释需更通俗','✅ 直击核保问题，专业度高'],
+    cases:[[],
+      ['健康触发切入：体检发现问题反而是个好的投保时机——趁现在还只是结节，赶紧把保障配上。万一后续需要治疗，保费一年才几百块，医疗费用全兜底。'],
+      ['价格优势：百万医疗险年保费才300-600块（30岁），保额最高600万。性价比在所有保险里排第一。'],
+      ['免赔额通俗解释：1万免赔额就是——社保报销完了，自费部分超过1万的，全部由保险赔。大部分人一场大病自费远超1万，所以免赔额影响不大。'],
+      []]},
+  '增员面谈（犹豫型）':{a:['你说做保险？我可没兴趣，我觉得保险行业不靠谱。','我现在工作虽然不太好，但至少稳定。做保险收入不稳定吧？','身边做保险的人感觉素质参差不齐...','那你说的培训体系，具体是什么样的？','嗯...听起来比我想象的专业。但我还是怕做不好。'],c:['⚠️ 直接面对偏见，需要先理解再引导','⚠️ 需要讲清行业真实情况，不能回避','❌ 简单否定客户印象不专业，应客观分析','✅ 培训体系有说服力','✅ 正视客户顾虑，建立信任'],
+    cases:[[],
+      ['偏见化解：您说的确实有这种现象。不过现在保险行业已经大不一样了——监管越来越严，学历门槛越来越高，销售误导会被严厉处罚。'],
+      ['收入真相：保险收入确实有波动期，但这是前期。我们团队的新人，6个月后平均月入8000以上。关键是有系统培训和专业团队支持。'],
+      ['培训体系：我们有完整的培训路径——产品知识→销售技巧→合规规范→实战陪练，新人前3个月有专人带教，不会让您一个人摸索。'],
+      []]},
+  '续保沟通':{a:['你好，我今年的保费怎么涨了200块？之前说是固定保费啊。','这个涨幅也太大了，我要考虑一下要不要续保。','那我换个便宜的行不行？','好吧，你说的也有道理。那我续保的话有什么优惠吗？','行，那就续吧。'],c:['⚠️ 需要先解释涨价原因，不能回避','⚠️ 客户有退保意向，需讲清续保价值','⚠️ 不能简单否定换产品，需客观对比','✅ 提供续保优惠，增加黏性','✅ 成功续保'],
+    cases:[[],
+      ['涨价原因解释：保费调整是因为医疗费用通胀和理赔率变化，这是行业整体调整，不是我们公司单独涨价。所有保险公司都有类似调整。'],
+      ['续保价值：续保最大的好处是——不用重新健康告知、不用重新计算等待期。如果现在换产品，您的甲状腺结节可能影响核保，甚至被拒保。'],
+      ['产品对比：换便宜的可以，但要注意保障范围是否一样。有些便宜产品免赔额更高、报销比例更低。我帮您做个对比，您看清楚了再做决定。'],
+      []]},
+  '产说会后跟进':{a:['你好，上次产说会您签了意向单，后续考虑得怎么样了？','回家冷静下来想想，觉得还是先不急，慢慢看。','也不是不认可，就是觉得年缴1万多压力有点大。','月缴？那倒还好。但我老婆说等她了解一下再说。','好的，那我先看看资料，回头再联系你。'],c:['✅ 及时跟进产说会意向','⚠️ 客户犹豫是常见现象，需挖掘真实原因','✅ 挖出价格顾虑，方向对了','✅ 提出月缴方案，降低门槛','⚠️ 客户有拖延倾向，需设定下次联系时间'],
+    cases:[[],
+      ['产说会跟进要点：产说会的热度48小时内最高，超过72小时意向率断崖式下降。所以必须趁热打铁，当天晚上或次日就跟进。'],
+      ['月缴方案：年缴1万多确实有压力，不过月缴才900多，跟交个手机话费差不多。太太知道了也不会觉得负担大。'],
+      ['夫妻沟通：太太想了解说明她不是反对，只是谨慎。我帮您准备一份简洁的方案说明，您带回家给太太看，有不懂的随时问我。'],
+      []]},
+  '理赔纠纷处理':{a:['我理赔金额只有8万，你们说保额50万，怎么才赔8万？！','什么轻症只赔20%？你们合同里写得那么隐蔽！','我不管什么比例，我交了5年保费，赔这点钱太不合理了！','投诉？我就是要投诉！你们这些保险公司就是欺负老百姓！','...好吧，那我先看看合同条款。但我还是很不满意。'],c:['❌ 不能回避合同条款，需冷静解释','⚠️ 客户情绪激动，需先安抚再解释','❌ 对愤怒客户讲道理没用，要先共情','⚠️ 投诉威胁需认真对待，不能敷衍','✅ 客户愿意看合同，这是转折点'],
+    cases:[[],
+      ['情绪安抚：我完全理解您的心情，期望50万只拿到8万，确实让人失望。不过这个差额是有明确合同约定的，我帮您逐条解释清楚。'],
+      ['条款解释：50万是重疾保额，轻症按合同约定赔付20%即10万，加上您这次确诊的是原位癌，属于轻症范畴。这不是我们故意少赔，是合同约定的赔付比例。'],
+      ['共情+引导：您觉得不合理我理解。不过合同条款是有法律效力的，我们严格按合同赔是合规要求。如果您对条款有疑问，我可以帮您逐条解释，也可以帮您联系公司法务部门进一步确认。'],
+      []]}
+};
+const myScsDefault = [
+  {n:'企业主保障检视',d:'建材老板，50岁，年营收500万，精明直接',dt:'2026-07-01',c:3},
+  {n:'宝妈保障咨询',d:'全职太太，32岁，老公年收入30万，想给宝宝买保险',dt:'2026-06-28',c:1},
+  {n:'个体户理赔咨询',d:'餐饮老板，45岁，以前买过重疾险想了解理赔',dt:'2026-06-25',c:2}
+];
+let myScs = JSON.parse(localStorage.getItem('aiMyScs')) || myScsDefault;
+const hdata = [
+  {id:1,sc:'S01',dt:'2026-07-02 14:30',sc2:78,lv:'中级',tm:'8分12秒',rd:14},
+  {id:2,sc:'S01',dt:'2026-07-01 10:15',sc2:72,lv:'中级',tm:'7分45秒',rd:12},
+  {id:3,sc:'S01',dt:'2026-06-30 16:00',sc2:65,lv:'中级',tm:'6分30秒',rd:10},
+  {id:15,sc:'S01',dt:'2026-06-29 11:00',sc2:58,lv:'初级',tm:'5分20秒',rd:8},
+  {id:16,sc:'S01',dt:'2026-06-28 09:30',sc2:52,lv:'初级',tm:'4分50秒',rd:7},
+  {id:4,sc:'S04',dt:'2026-07-02 16:20',sc2:82,lv:'初级',tm:'5分20秒',rd:8},
+  {id:5,sc:'S04',dt:'2026-07-01 09:00',sc2:71,lv:'初级',tm:'4分50秒',rd:7},
+  {id:6,sc:'S04',dt:'2026-06-29 14:30',sc2:63,lv:'初级',tm:'6分10秒',rd:9},
+  {id:7,sc:'S05',dt:'2026-07-01 18:00',sc2:70,lv:'中级',tm:'9分00秒',rd:16},
+  {id:8,sc:'S05',dt:'2026-06-29 11:20',sc2:55,lv:'中级',tm:'8分30秒',rd:14},
+  {id:9,sc:'S05',dt:'2026-06-27 10:10',sc2:42,lv:'初级',tm:'7分20秒',rd:12},
+  {id:10,sc:'S02',dt:'2026-07-02 11:00',sc2:72,lv:'中级',tm:'8分30秒',rd:13},
+  {id:11,sc:'S02',dt:'2026-06-28 15:45',sc2:60,lv:'中级',tm:'7分40秒',rd:11},
+  {id:12,sc:'S06',dt:'2026-07-01 19:30',sc2:75,lv:'初级',tm:'6分50秒',rd:9},
+  {id:13,sc:'S06',dt:'2026-06-26 14:00',sc2:62,lv:'初级',tm:'5分30秒',rd:7},
+  {id:14,sc:'S03',dt:'2026-07-02 09:45',sc2:68,lv:'初级',tm:'7分10秒',rd:11}
+];
+let curSc = null, chatStep = 0, reversedMode = false, curMyScIdx = -1, curDiff = 0, examMode = false, _examLv = -1;
+
+// PAGE NAV
+let navStack = [];
+const tabTitles = {home:'AI 陪练',hist:'练习记录',exam:'闯关',me:'我的'};
+const tabMap = {home:'s0',hist:'s4',exam:'s9',me:'s11'};
+
+function showPage(id) {
+  const cur = document.querySelector('.screen.active');
+  if (cur && cur.id !== id) navStack.push(cur.id);
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const next = document.getElementById(id);
+  next.classList.add('active');
+  next.classList.add('slide-in');
+  setTimeout(()=>next.classList.remove('slide-in'), 260);
+  hidetb();
+}
+function showPageTB(id) {
+  const cur = document.querySelector('.screen.active');
+  if (cur && cur.id !== id) navStack.push(cur.id);
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const next = document.getElementById(id);
+  next.classList.add('active');
+  next.classList.add('slide-in');
+  setTimeout(()=>next.classList.remove('slide-in'), 260);
+  document.getElementById('tb').style.display='flex';
+}
+let _memberReturn = null; // member detail restore state
+
+function goback() {
+  // exam mode: always go back to exam level detail
+  if(examMode) {
+    backToExam();
+    return;
+  }
+  if (navStack.length === 0) return;
+  const prevId = navStack.pop();
+  if (prevId === '@member') {
+    showMemberDetail(_memberReturn);
+    _memberReturn = null;
+    return;
+  }
+  const cur = document.querySelector('.screen.active');
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const prev = document.getElementById(prevId);
+  prev.classList.add('active');
+  prev.classList.add('slide-in-back');
+  setTimeout(()=>prev.classList.remove('slide-in-back'), 260);
+  hidetb();
+  // Restore tab state if returning to a tab page
+  const rev = {s0:'home', s4:'hist', s9:'exam', s11:'me'};
+  const t = rev[prevId];
+  if (t) {
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    document.querySelector(`.tab[data-t="${t}"]`).classList.add('on');
+    setTitle(tabTitles[t]);
+    if (t==='home') { switchStab('preset'); renderMySc(); }
+    if (t==='hist') renderHL('全部');
+    if (t==='me') initMe();
+  }
+}
+
+function hidetb() {
+  const homepages = ['s0','s4','s9','s11','s12'];
+  const cur = document.querySelector('.screen.active');
+  document.getElementById('tb').style.display = (cur && homepages.includes(cur.id)) ? 'flex' : 'none';
+}
+
+function setTitle(t) {
+  document.getElementById('htitle').textContent = t;
+  document.querySelector('.app-header .back').style.display = (t==='AI 陪练'||t==='练习记录'||t==='闯关'||t==='我的') ? 'none' : 'block';
+}
+
+// TAB SWITCH
+function swtch(t) {
+  navStack = [];
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+  document.querySelector(`.tab[data-t="${t}"]`).classList.add('on');
+  showPageTB(tabMap[t]);
+  setTitle(tabTitles[t]);
+  if(t==='home') { switchStab('preset'); renderMySc(); }
+  if(t==='hist') renderHL('全部');
+  if(t==='exam') { initExam(); }
+}
+
+// RENDER SCENARIO LIST
+function renderSL() {
+  let f = '<div class="cat-scroll">';
+  f += '<span class="fbtn on" onclick="filterCat(\'全部\',this)">全部 <span style="font-size:10px;">32</span></span>';
+  cats.forEach(c => {
+    const n = SC.filter(s=>s.c===c).length;
+    f += '<span class="fbtn" onclick="filterCat(\'' + c + '\',this)">' + c + ' <span style="font-size:10px;">' + n + '</span></span>';
+  });
+  f += '</div>';
+  let h = '<div id="slList">';
+  SC.forEach(s => {
+    const stars = '⭐'.repeat(s.s);
+    const b = '<span class="bp' + s.p + '" style="font-size:9px;">P' + s.p + '</span>';
+    h += '<div class="sc" data-cat="' + s.c + '" onclick="gotoDetail(\'' + s.id + '\')"><div class="sct"><span class="nm">' + s.id + ' ' + s.n + '</span><span style="font-size:10px;color:#bbb;">' + stars + '</span></div><div class="scd">' + s.d + '</div><div class="sctag">' + b + '</div></div>';
+  });
+  h += '</div>';
+  document.getElementById('sl').innerHTML = f + h;
+}
+
+function filterCat(cat, el) {
+  document.querySelectorAll('#sl .fbtn').forEach(x => x.classList.remove('on'));
+  el.classList.add('on');
+  document.querySelectorAll('#slList .sc').forEach(card => {
+    card.style.display = (cat === '全部' || card.dataset.cat === cat) ? '' : 'none';
+  });
+}
+
+// SCENARIO DETAIL
+function gotoDetail(id) {
+  const s = SC.find(x=>x.id===id);
+  if(!s) return;
+  curSc = s;
+  setTitle(s.n);
+  const stars = '⭐'.repeat(s.s);
+  document.getElementById('s1c').innerHTML = `
+    <div class="rb" style="text-align:center;"><div class="lb">${s.id} · ${s.c}</div><div style="font-size:20px;font-weight:600;">${s.n}</div><div style="font-size:13px;color:#666;margin-top:4px;text-align:left;line-height:1.5;">${s.d}</div><div style="margin-top:6px;display:flex;gap:6px;justify-content:center;"><span class="tag">${s.c}</span><span class="bp${s.p}">Phase ${s.p}</span><span style="font-size:11px;color:#bbb;">${stars}</span></div></div>
+    <div class="stitle"><span class="ic">🎯</span> 难度选择</div>
+    <div class="lc">
+      <div class="lci on" onclick="selLv(this)"><div class="lv">初级</div><div class="ld">客户配合度高</div></div>
+      <div class="lci" onclick="selLv(this)"><div class="lv">中级</div><div class="ld">客户有犹豫</div></div>
+      <div class="lci" onclick="selLv(this)"><div class="lv">地狱级</div><div class="ld">全程抗拒+挑刺</div></div>
+    </div>
+    <button class="btn btnp btnw btnl" style="margin-top:2px;" onclick="startChat()"><span class="ic ic-sm">🚀</span> 开始对练</button>
+    <button class="btn btno btnw" style="margin-top:6px;" onclick="startReversedChat()"><span class="ic ic-sm">🔄</span> 反转角色练习 · 你当客户，AI当代理人</button>`;
+  showPage('s1');
+}
+function selLv(el) {
+  document.querySelectorAll('.lci').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
+  // store difficulty: 0=初级, 1=中级, 2=地狱
+  const idx = Array.from(el.parentElement.children).indexOf(el);
+  curDiff = idx;
+}
+
+// CHAT
+function startChat() {
+  examMode = false;
+  reversedMode = false;
+  chatStep = 0;
+  // curDiff already set by selLv, or defaults to 0 (初级)
+  const s = curSc;
+  const sk = scripts[s.n] || {a:['您好，我是今天跟您沟通的客户。','您说的我有点不太明白。','嗯，我考虑考虑吧。'],c:['✅ 开场自然','⚠️ 可以更通俗','❌ 没有挖掘真实顾虑'],cases:[[],[],[]]};
+  let h = `<div style="text-align:center;font-size:11px;color:#bbb;padding:4px 0;">${s.n}</div>`;
+  h += `<div class="msg ai"><div class="av">🤖</div><div class="bub" style="position:relative;">${sk.a[0]}<span class="spk" onclick="playVoice(event,this)" style="position:absolute;right:6px;top:6px;cursor:pointer;opacity:.5;font-size:12px;line-height:1;">🔊</span></div></div>`;
+  document.getElementById('chatmsgs').innerHTML = h;
+  document.getElementById('chatn').textContent = s.n;
+  document.getElementById('chatInput').value = '';
+  document.getElementById('chatInput').placeholder = '输入你的回答...';
+  updateProgress();
+  showPage('s2');
+  setTimeout(() => {
+    const s2 = document.querySelector('#chatmsgs .msg.ai .spk');
+    if (s2) playVoice(null, s2);
+  }, 400);
+}
+
+function sendMsg() {
+  if (reversedMode) return sendReversedMsg();
+  const inp = document.getElementById('chatInput');
+  const txt = inp.value.trim();
+  if(!txt) return;
+  inp.value = '';
+  const area = document.getElementById('chatmsgs');
+  const s = curSc;
+  const sk = scripts[s.n] || {a:['好的，那今天就先到这里？'],c:['✅ 完成对话'],cases:[[]]};
+  // add user message
+  area.innerHTML += `<div class="msg us"><div class="av">👤</div><div class="bub">${escHtml(txt)}</div></div>`;
+  chatStep++;
+  updateProgress();
+  // add inline comment
+  const prevCmt = sk.c && sk.c[chatStep] ? sk.c[chatStep] : '';
+  if(prevCmt) {
+    area.innerHTML += `<div class="cmt-bub"><span class="cmt-tag">💡 点评：</span>${prevCmt}</div>`;
+  }
+  // determine AI response
+  let aiMsg;
+  if(chatStep < sk.a.length) {
+    aiMsg = sk.a[chatStep];
+  } else {
+    // free chat mode: generate contextual follow-up based on scenario category
+    aiMsg = getFreeChatMsg(s, chatStep, txt);
+  }
+  // show "thinking" animation then reveal message
+  const thinkId = 'think_' + Date.now();
+  area.innerHTML += `<div class="msg ai" id="${thinkId}"><div class="av">🤖</div><div class="bub"><div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div> <span style="font-size:12px;color:#999;">思考中...</span></div></div>`;
+  area.scrollTop = area.scrollHeight;
+  setTimeout(()=>{
+    const el = document.getElementById(thinkId);
+    if(el) {
+      el.innerHTML = `<div class="av">🤖</div><div class="bub" style="position:relative;">${aiMsg}<span class="spk" onclick="playVoice(event,this)" style="position:absolute;right:6px;top:6px;cursor:pointer;opacity:.5;font-size:12px;line-height:1;">🔊</span></div>`;
+      area.scrollTop = area.scrollHeight;
+      const s2 = el.querySelector('.spk');
+      if(s2) playVoice(null, s2);
+    }
+  }, 1200);
+}
+
+// FREE CHAT - contextual follow-up after scripted dialogue ends
+const freeChatPool = {
+  '异议处理': [
+    '嗯...我再考虑考虑吧。你能再给我讲讲具体的保障范围吗？',
+    '这样听起来好像还行，但是我身边也有人买了之后后悔的...',
+    '好吧，你说的也有道理。那我怎么确定你们公司靠谱呢？',
+    '我回去再跟家里人商量一下，这事不能我一个人定。',
+    '其实我最担心的是万一以后理赔麻烦怎么办？你能保证吗？',
+    '嗯，你讲得挺清楚的。但价格这块我还是觉得偏高，有没有便宜一点的方案？'
+  ],
+  '产品讲解': [
+    '那你说的这个产品，跟其他公司的同类产品比有什么优势？',
+    '如果中间断了缴费会怎么样？保障还有吗？',
+    '这个等待期是多长？等待期内出事赔不赔？',
+    '那万一以后产品停售了，我的保障怎么办？',
+    '听起来还不错。你能给我看一下具体的条款吗？',
+    '这个产品的现金价值是怎么算的？多久能回本？'
+  ],
+  '需求分析': [
+    '你说得挺专业的。那根据我的情况，你建议优先配什么？',
+    '我这种情况，大概一年需要花多少钱在保险上？',
+    '如果我预算有限，能不能分步配置？先买最必要的？',
+    '那你觉得我们家最大的风险缺口在哪里？',
+    '社保加上你说的商业保险，是不是就够全面了？',
+    '你帮我算一下，如果按这个方案，每月大概要花多少？'
+  ],
+  '获客破冰': [
+    '嗯...听起来保险确实有道理，但我也不是马上就要买吧？',
+    '你说的这些，我不太懂，能不能简单点讲？',
+    '那我这种情况，大概需要什么类型的保险？',
+    '我之前也想过买保险，就是不知道从哪里开始。',
+    '保险这个东西，买了以后服务怎么样？出事了找谁？',
+    '好吧，那你先帮我做个方案看看，我不急着定。'
+  ],
+  '促成签单': [
+    '嗯...我还是想再想想，不着急做决定。',
+    '那如果现在定下来，什么时候开始生效？',
+    '能不能先把方案发给我，我研究一下再答复你？',
+    '万一买了之后后悔了，能不能退？',
+    '好吧...那你说的月缴方式，具体怎么操作？',
+    '我需要跟老婆再确认一下，她可能还有问题想问你。'
+  ],
+  '售后服务': [
+    '那理赔的时候需要准备什么材料？能列一下吗？',
+    '如果以后想加保或者调整方案，方便吗？',
+    '你们公司有没有客户服务热线？有问题找谁？',
+    '那保单到期后续保，还需要重新审核吗？',
+    '我朋友也想了解保险，你能帮忙联系一下吗？',
+    '出险了之后大概多久能拿到理赔款？'
+  ],
+  '增员面谈': [
+    '如果我来做保险，前期收入大概能有多少？',
+    '你们团队的培训具体怎么安排？每周几次？',
+    '做保险是不是要自己找客户？我没什么人脉...',
+    '我担心做保险会得罪朋友，这个怎么处理？',
+    '那如果我做了一段时间觉得不适合，能退出吗？',
+    '你们公司对新人有什么扶持政策？'
+  ],
+  '高端客户': [
+    '你说得有道理，但我需要看更详细的数据和对比分析。',
+    '这个方案的税务优化方面，有没有专业律师审核过？',
+    '我对资产隔离这块很关注，你能展开讲讲吗？',
+    '这种大额保单，监管方面有没有什么特殊要求？',
+    '你说的这个架构，跟信托有什么区别？哪个更适合我？',
+    '我需要把方案给我的财务顾问看看，你能提供完整文件吗？'
+  ],
+  '复杂异议': [
+    '我不是不想买，但家里人坚决反对，我夹在中间很难做。',
+    '之前退保亏了钱，现在对保险真的没信心了。',
+    '好吧，那你能证明你们的方案跟之前那个不一样吗？',
+    '我需要你拿出具体数据说服我，光讲道理不够。',
+    '那你觉得我这种情况，还有必要买保险吗？',
+    '如果再出问题，你们公司能不能承诺什么？'
+  ],
+  '特殊场景': [
+    '产说会上那些优惠，回家想了想觉得可能是营销套路...',
+    '我跟老婆意见不一样，她觉得买保险不如存钱。你怎么看？',
+    '好吧，那你帮我分析一下我们家的真实需求，不要推销。',
+    '这种理赔问题，你们内部流程是什么样的？能透明吗？',
+    '我老公说要等经济宽裕了再买，你觉得这个想法对吗？',
+    '能不能先做个简单的家庭保障评估，不急着买？'
+  ],
+  '自定义': [
+    '嗯，你说的有些道理，但我还是有些顾虑想再问问。',
+    '好吧，那你觉得接下来我们应该怎么推进？',
+    '这个我之前没想过，你能再详细解释一下吗？',
+    '听起来不错，但能不能给我看看具体的数字？',
+    '我回去再想想，你说的这些我再消化消化。',
+    '那你觉得我这种情况最该优先解决哪个问题？'
+  ]
+};
+
+// Difficulty-specific free chat pools - harder difficulty = more resistant customer
+const freeChatHard = {
+  '异议处理': [
+    '我觉得你们就是在骗钱，别再说了。',
+    '价格贵就是贵，别跟我算什么日均，那是你们的话术套路。',
+    '你说理赔率97%？那是你们自己的数据，谁信啊。',
+    '别家的方案我仔细研究过了，你们确实不如人家。',
+    '你越说越让我不想买了，别催我。',
+    '我跟你说实话，我就是不想买，你说什么都没用。'
+  ],
+  '产品讲解': [
+    '别跟我讲概念，给我看合同条款，特别是免责条款。',
+    '你这讲的都是优点，缺点呢？现金价值多久能回本？',
+    '停售了怎么办？你们公司会不会也倒闭？',
+    '我查了网上测评，你们这个产品性价比不高。',
+    '佣金拿了多少？你们代理人卖产品自己赚多少？',
+    '别用专业术语糊弄我，用大白话说清楚每一项。'
+  ],
+  '需求分析': [
+    '你说的风险缺口我不认可，我身体好得很不需要保险。',
+    '20万收入买什么保险？我房贷都还不起。',
+    '别给我算什么缺口，我自认为保障够了。',
+    '你们代理人就是制造焦虑让人买保险的。',
+    '社保够用了，你说的那些缺口是你编出来的。',
+    '我不需要你分析，我知道自己要什么。'
+  ],
+  '获客破冰': [
+    '我不认识你，为什么要听你说这些？',
+    '刘姐介绍不代表我信任你，别拿人名压我。',
+    '保险我绝对不会买，你不用浪费时间。',
+    '你别套近乎，我跟你没那么熟。',
+    '我现在很忙，没兴趣聊保险，请不要再联系我。',
+    '我朋友买了后悔了，我不会上当的。'
+  ],
+  '促成签单': [
+    '你催我签单我就更不想签了，别逼我。',
+    '今天绝对不会签，你别再提签单的事。',
+    '你说的月缴900多也不少，一年下来还是一万多。',
+    '我老婆说了坚决不买，我听她的。',
+    '你们代理人就是想赚佣金，别装了。',
+    '就算要买也不会今天买，我慢慢看。'
+  ],
+  '售后服务': [
+    '保费涨了就是你们的套路，别解释了我要退保。',
+    '理赔金额这么低你们还说是合同约定？合同就是你们写的！',
+    '我要投诉你们公司，理赔太慢了还找借口。',
+    '续保？我正考虑换公司呢你们服务太差。',
+    '你们就是欺负老百姓不懂法律，我要找监管部门。',
+    '别跟我讲条款，我要的是公平赔款不是文字游戏。'
+  ],
+  '高端客户': [
+    '5000万身价的人不需要你这种代理人来操心。',
+    '你们这种产品方案太低端了，不配我的资产规模。',
+    '我对保险非常了解，你别想用话术蒙我。',
+    '这方案税务架构有明显漏洞，你重新做。',
+    '我不需要你帮我规划，我有自己的律师和税务团队。',
+    '给我拿出对比方案，5家公司的同类型产品横向比较。'
+  ],
+  '增员面谈': [
+    '保险行业就是传销，别来忽悠我。',
+    '你们团队的收入数据我不信，肯定有水分。',
+    '我学历比你们团队都高，为什么要去做保险？',
+    '做保险的人社会地位低，我朋友会看不起我。',
+    '我不想把时间浪费在一个没有前途的行业。',
+    '你们的培训就是洗脑培训，我不会参加。'
+  ],
+  '复杂异议': [
+    '家里人说不买就不买，我不会违背他们的意愿。',
+    '我之前退保亏了8000块，你们公司要赔偿我。',
+    '你们代理人卖的时候说得天花乱坠，理赔就找理由拒赔。',
+    '网上全是你们公司拒赔的投诉帖子，你自己去看看。',
+    '我不需要什么缺口分析，我就是不想买。',
+    '法律？你们保险公司有钱有律师，老百姓维权太难了。'
+  ],
+  '特殊场景': [
+    '产说会就是传销大会，那些优惠都是套路。',
+    '我老婆说买保险是傻瓜才做的事，你说她错了吗？',
+    '理赔纠纷你们永远说是合同约定，老百姓怎么赢？',
+    '你们公司连理赔都搞不清楚还卖什么保险。',
+    '我要在社交媒体上曝光你们公司。',
+    '合同条款你们故意写复杂让人看不懂，这叫霸王条款。'
+  ],
+  '自定义': [
+    '我不想再讨论了，请你不要再联系我。',
+    '你说的每一句话我都不信。',
+    '你们这个行业就是骗人的。',
+    '别催我，我不会今天做任何决定。',
+    '你拿不出任何我信服的证据。',
+    '就算你讲得再好，我也不会买的。'
+  ]
+};
+
+function getFreeChatMsg(scenario, step, userTxt) {
+  const cat = scenario.c || '自定义';
+  // difficulty determines pool: 0=初级(standard), 1=中级(mixed), 2=地狱(hard only)
+  if(curDiff === 2) {
+    const pool = freeChatHard[cat] || freeChatHard['自定义'];
+    const idx = (step - 1) % pool.length;
+    return pool[idx];
+  } else if(curDiff === 1) {
+    // mixed: alternate standard and hard
+    const poolStd = freeChatPool[cat] || freeChatPool['自定义'];
+    const poolHard = freeChatHard[cat] || freeChatHard['自定义'];
+    const idx = (step - 1);
+    return idx % 2 === 0 ? poolStd[idx % poolStd.length] : poolHard[idx % poolHard.length];
+  }
+  // 初级: standard cooperative pool
+  const pool = freeChatPool[cat] || freeChatPool['自定义'];
+  const idx = (step - 1) % pool.length;
+  return pool[idx];
+}
+
+function updateProgress() {
+  const s = curSc;
+  const sk = scripts[s.n] || {a:['好的'],c:['✅'],cases:[[]]};
+  const scriptedLen = sk.a.length;
+  const el = document.getElementById('chatProgress');
+  if(el) {
+    if(chatStep <= scriptedLen) {
+      const pct = Math.round((chatStep / scriptedLen) * 100);
+      el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;justify-content:center;"><span>第${chatStep}轮</span><div style="width:60px;height:4px;background:#f0f0f0;border-radius:2px;overflow:hidden;"><div style="width:${Math.min(pct,100)}%;height:100%;background:linear-gradient(135deg,#6C63FF,#8B7CFA);border-radius:2px;transition:width .3s;"></div></div><span>脚本${pct}%</span></div>`;
+    } else {
+      el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;justify-content:center;"><span>第${chatStep}轮 · 自由对话</span><span style="color:#6C63FF;font-size:11px;">点击"结束对练"可随时结束</span></div>`;
+    }
+  }
+}
+
+// REVERSED MODE
+function startReversedChat() {
+  reversedMode = true;
+  chatStep = 0;
+  const s = curSc;
+  const sk = scripts[s.n];
+  const title = document.getElementById('chatn');
+  title.textContent = s.n + '（反转练习）';
+  let h = '<div style="text-align:center;font-size:11px;color:#fa8c16;padding:4px 0;">🔁 反转角色 · 你是客户（🤖），AI是代理人（💼）</div>';
+  const firstMsg = extractAgentMsg(sk, 0) || '您好，我是您的保险顾问。今天我们来聊聊您的保障需求？';
+  h += '<div class="msg ai"><div class="av">💼</div><div class="bub" style="position:relative;">' + firstMsg + '<span class="spk" onclick="playVoice(event,this)" style="position:absolute;right:6px;top:6px;cursor:pointer;opacity:.5;font-size:12px;line-height:1;">🔊</span></div></div>';
+  const area = document.getElementById('chatmsgs');
+  area.innerHTML = h;
+  document.getElementById('chatInput').value = '';
+  document.getElementById('chatInput').placeholder = '作为客户，输入你的回应...';
+  showPage('s2');
+  setTimeout(function(){
+    var spk = area.querySelector('.msg.ai .spk');
+    if (spk) playVoice(null, spk);
+  }, 400);
+}
+
+function extractAgentMsg(sk, idx) {
+  if (sk && sk.cases && sk.cases[idx] && sk.cases[idx].length > 0) {
+    var msg = sk.cases[idx][0];
+    msg = msg.replace(/^[^：]*?[：]/, '');
+    return msg.trim();
+  }
+  return null;
+}
+
+function getGenericAgentMsg(step) {
+  var msgs = [
+    '您说得对，我完全理解您的想法。不过从专业角度来看，我建议您考虑一下这几个方面...',
+    '这个顾虑很正常，很多客户一开始也是这么想的。我来帮您分析一下其中的关键点。',
+    '您提的这个问题很好。其实这正是我们需要重点关注的地方，我给您详细解释一下。',
+    '嗯，您说的有道理。那您看这样行不行，我们先从最基础的保障开始配置。',
+    '好的，我完全明白您的意思了。综合来看，我建议的方案是这样的...'
+  ];
+  return msgs[step % msgs.length];
+}
+
+function sendReversedMsg() {
+  var inp = document.getElementById('chatInput');
+  var txt = inp.value.trim();
+  if(!txt) return;
+  inp.value = '';
+  var area = document.getElementById('chatmsgs');
+  area.innerHTML += '<div class="msg us"><div class="av">🤖</div><div class="bub" style="padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.6;background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;border-top-right-radius:3px;">' + escHtml(txt) + '</div></div>';
+  var s = curSc;
+  var sk = scripts[s.n];
+  chatStep++;
+  var maxSteps = (sk && sk.cases) ? sk.cases.length : 4;
+  if(chatStep < maxSteps) {
+    var agentMsg = extractAgentMsg(sk, chatStep) || getGenericAgentMsg(chatStep);
+    area.innerHTML += '<div class="msg ai"><div class="av">💼</div><div class="bub" style="position:relative;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.6;background:#fff;border:1px solid #eee;border-top-left-radius:3px;">' + agentMsg + '<span class="spk" onclick="playVoice(event,this)" style="position:absolute;right:6px;top:6px;cursor:pointer;opacity:.5;font-size:12px;line-height:1;">🔊</span></div></div>';
+    setTimeout(function(){
+      var spk = area.querySelector(".msg.ai:last-child .spk");
+      if (spk) playVoice(null, spk);
+    }, 300);
+  }
+  area.scrollTop = area.scrollHeight;
+}
+
+function confirmEnd() {
+  if (reversedMode) endReversedPractice();
+  else endPractice();
+}
+
+function endReversedPractice() {
+  document.getElementById('endOV').classList.remove('on');
+  reversedMode = false;
+  // update practice count for custom scenarios
+  var s = curSc;
+  if(s && s.id && s.id.startsWith('MY')) {
+    var idx = parseInt(s.id.replace('MY',''));
+    if(myScs[idx]) {
+      myScs[idx].c++;
+      localStorage.setItem('aiMyScs', JSON.stringify(myScs));
+    }
+  }
+  setTitle('反转练习报告');
+  var s = curSc;
+  var sk = scripts[s.n];
+  var r = '<div class="rb" style="text-align:center;"><div class="lb">🔁 AI代理人表现评估</div><div style="font-size:13px;color:#999;margin-top:4px;">看看AI代理人是如何专业回应的</div></div>';
+  if (sk) {
+    for (var i = 0; i < sk.a.length; i++) {
+      if (i === 0) {
+        var am = extractAgentMsg(sk, 0) || sk.a[0];
+        r += '<div class="rb"><div style="font-size:13px;font-weight:500;color:#6C63FF;margin-bottom:4px;">💼 AI代理人 开场</div><div style="background:#f5f6fa;padding:10px;border-radius:8px;font-size:13px;line-height:1.6;">' + am + '</div><div style="font-size:12px;color:#52c41a;margin-top:4px;">✅ ' + (sk.c[0] || '专业开场') + '</div></div>';
+      } else {
+        var custMsg = sk.a[i];
+        var agentResp = extractAgentMsg(sk, i) || getGenericAgentMsg(i);
+        r += '<div class="rb"><div style="font-size:12px;color:#999;margin-bottom:4px;">🤖 客户：' + custMsg + '</div><div style="font-size:13px;font-weight:500;color:#6C63FF;margin:6px 0 4px;">💼 AI代理人回应</div><div style="background:#f5f6fa;padding:10px;border-radius:8px;font-size:13px;line-height:1.6;">' + agentResp + '</div><div style="font-size:12px;color:#fa8c16;margin-top:4px;">📌 评分：' + (sk.c[i] || '良好') + '</div></div>';
+      }
+    }
+  }
+  r += '<div class="rb" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);border:1px solid #dde4ff;"><div class="lb">💡 学习要点</div><div style="font-size:13px;line-height:1.7;color:#333;">通过反转角色练习，你可以学习AI代理人的专业回应方式：<br><br>1️⃣ <b>开场破冰</b> — 如何自然建立信任<br>2️⃣ <b>异议处理</b> — 面对客户质疑时的正确回应<br>3️⃣ <b>需求引导</b> — 用提问挖掘客户真实需求<br>4️⃣ <b>价值塑造</b> — 把价格转化为价值<br>5️⃣ <b>促成推进</b> — 把握时机推进签单<br><br>建议针对AI表现优秀的环节重点模仿学习。</div></div>';
+  r += '<button class="btn btnp btnw" onclick="retryChat()" style="margin-top:6px;"><span class="ic ic-sm">🔄</span> 再练一次（普通模式）</button>';
+  document.getElementById('rpt').innerHTML = r;
+  document.getElementById('dpt').innerHTML = '';
+  // Hide tab switcher for reversed report
+  document.getElementById('rts').style.display = 'none';
+  showPage('s3');
+  document.querySelectorAll("#rts .ti").forEach(function(x,i){x.classList.toggle("on",i===0);});
+  document.querySelectorAll("#s3 .tc").forEach(function(x,i){x.classList.toggle("on",i===0);});
+}
+
+// VOICE MODE
+let isRecording = false;
+let recTimer = null;
+
+function switchVoiceMode() {
+  document.getElementById('textMode').style.display = 'none';
+  document.getElementById('voiceMode').style.display = 'flex';
+}
+function switchTextMode() {
+  document.getElementById('textMode').style.display = 'flex';
+  document.getElementById('voiceMode').style.display = 'none';
+}
+
+function startRecord() {
+  if (isRecording) return;
+  isRecording = true;
+  const btn = document.getElementById('holdBtn');
+  const ov = document.getElementById('recOverlay');
+  btn.style.background = '#e8e8e8';
+  btn.style.borderColor = '#6C63FF';
+  btn.textContent = '松开 发送';
+  ov.style.display = 'block';
+  let i = 0;
+  recTimer = setInterval(() => {
+    const bars = '▎▌▊█▊▌▎';
+    document.getElementById('recAnim').textContent = bars[i % bars.length] + bars[(i+2) % bars.length] + bars[(i+4) % bars.length];
+    i++;
+  }, 200);
+}
+function stopRecord() {
+  if (!isRecording) return;
+  isRecording = false;
+  clearInterval(recTimer);
+  recTimer = null;
+  const btn = document.getElementById('holdBtn');
+  const ov = document.getElementById('recOverlay');
+  btn.style.background = '#f5f6fa';
+  btn.style.borderColor = '#e8e8e8';
+  btn.textContent = '按住说话';
+  ov.style.display = 'none';
+  // Simulate transcription - pick relevant response based on current step
+  const txts = ['您好，我上次跟您聊的方案您考虑得怎么样了？','嗯，您说的有道理，但是价格方面我还有点顾虑。','这个我需要再想想。','好吧，那就先这样吧。'];
+  const msg = txts[Math.min(chatStep, txts.length-1)];
+  document.getElementById('chatInput').value = msg;
+  sendMsg();
+  switchTextMode();
+}
+function cancelRecord() {
+  if (!isRecording) return;
+  isRecording = false;
+  clearInterval(recTimer);
+  recTimer = null;
+  const btn = document.getElementById('holdBtn');
+  const ov = document.getElementById('recOverlay');
+  btn.style.background = '#f5f6fa';
+  btn.style.borderColor = '#e8e8e8';
+  btn.textContent = '按住说话';
+  ov.style.display = 'none';
+}
+
+function endPractice() {
+  document.getElementById('endOV').classList.remove('on');
+  const s = curSc;
+  // update practice count for custom scenarios
+  if(s && s.id && s.id.startsWith('MY')) {
+    const idx = parseInt(s.id.replace('MY',''));
+    if(myScs[idx]) {
+      myScs[idx].c++;
+      localStorage.setItem('aiMyScs', JSON.stringify(myScs));
+    }
+  }
+  const dimWeights = [15,20,15,20,20,10]; // 各项满分，合计100
+  // deterministic scoring based on scenario + step count
+  const seed = s ? s.id.charCodeAt(1) + s.id.charCodeAt(2) : 70;
+  const earned = dimWeights.map((w,i) => Math.max(Math.round(w*0.5), Math.round(w * (0.65 + 0.3 * ((seed + i*7) % 11) / 11))));
+  // difficulty scoring: 初级 +10% bonus, 中级 base, 地狱 -15% penalty
+  const diffMult = [1.10, 1.0, 0.85][curDiff] || 1.0;
+  const adjusted = earned.map((v,i) => {
+    const adj = curDiff === 0 ? Math.min(dimWeights[i], Math.round(v * diffMult)) : Math.max(Math.round(dimWeights[i]*0.3), Math.round(v * diffMult));
+    return adj;
+  });
+  const pcts = dims.map((_,i) => Math.round(adjusted[i] / dimWeights[i] * 100));
+  const total = adjusted.reduce((a,b)=>a+b, 0);
+  checkExamResult(total);
+  setTitle('评估报告');
+  // Report tab
+  let r = `<div class="rb" style="text-align:center;"><div class="lb">综合评分</div><div class="vl" style="font-size:36px;">${total}<span class="u">分</span></div></div>`;
+  r += `<div class="rb"><div class="lb"><span class="ic ic-sm">📊</span> 六维评分</div><canvas id="rc" width="240" height="240" style="margin:0 auto;display:block;max-width:100%;height:auto;"></canvas></div>`;
+  // General evaluation
+  const evals = [
+    '整体表现良好，话术规范性和合规意识不错，但在异议处理和共情能力方面还有提升空间。建议针对「客户说太贵了」场景重点练习异议处理技巧，学会先共情再讲理。',
+    '综合表现中等，销售逻辑和促成技巧是主要短板。建议加强需求分析阶段的训练，先挖痛再给方案，同时多练习促成时机的把握。',
+    '表现有待提高，多个维度得分偏低。建议先从标准话术背诵开始，熟练掌握后再进行自由对练，重点攻克异议处理模块。'
+  ];
+  const evalText = total >= 75 ? evals[0] : total >= 60 ? evals[1] : evals[2];
+  r += `<div class="rb" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);border:1px solid #dde4ff;"><div class="lb"><span class="ic ic-sm">📋</span> 综合评价</div><div style="font-size:13px;line-height:1.7;color:#333;">${evalText}</div></div>`;
+  const dimDetail = [
+    {reasons:['开场问候得体','用语专业不浮夸','语气温和有礼'],conv:'代理人：这个价格已经很合理了，您再考虑考虑？',improve:'建议用"价值-价格"顺序：先强调保额覆盖的风险缺口，再用"日均43元"化整为零，最后反问"您觉得方案还有什么需要调整的地方？"',analysis:'话术框架基本正确，开场和基础用语规范。但在价值塑造环节缺乏技巧——直接回应"合理"显得苍白。核心问题是未使用FABE法则（特征-优势-利益-证据）构建话术逻辑。',deduction:'客户说贵时直接反驳，未先共情'},
+    {reasons:['主动询问客户需求','方案讲解有条理'],conv:'代理人：我们这款产品保障很全面，是市场上最好的',improve:'应先用SPIN提问法挖掘客户痛点（情况-问题-影响-需求），再针对性给出方案，而非直接推销。',analysis:'销售逻辑不够清晰，跳过了最关键的需求分析环节。客户尚未认可自身风险缺口之前，直接推荐产品容易引发抗拒。',deduction:'跳过需求分析直接推销，销售逻辑缺失'},
+    {reasons:['使用开放式提问','给客户表达空间'],conv:'代理人：您觉得贵是因为没看到价值，了解了就不觉得贵了',improve:'先换位思考："张姐，我特别理解您觉得贵的心情。"然后再用故事化方式介绍保障价值。',analysis:'有共情意识但表达生硬，"您觉得贵是因为"句式本身带有说教感，容易让客户觉得被教育而非被理解。',deduction:'共情表达生硬，"您觉得贵是因为"带有说教感'},
+    {reasons:['认真听取了客户对比信息','未与客户争论'],conv:'代理人：闺蜜的产品跟我们不一样，没有可比性',improve:'先认可客户的信息来源："您闺蜜买的产品确实不错，不过保障侧重点不同。"再用客观数据做对比分析。',analysis:'面对竞品对比时防御性过强，简单否定会让客户觉得不专业不自信。正确的做法是先认可再引导，通过客观分析建立专业信任。',deduction:'简单否定客户信息来源，未做客观竞品分析'},
+    {reasons:['尝试推进签单流程','主动询问顾虑'],conv:'代理人：那您还有什么顾虑？说出来我帮您解决',improve:'用二选一法："张姐，如果今天定下来，您是选20年缴还是30年缴？"引导客户做选择而非给犹豫空间。',analysis:'有促成意识但技巧不足。"还有什么顾虑"等于在暗示"你应该有顾虑"。应默认成交，用假定成交法推进。',deduction:'被动等待而非主动促成，缺乏促成技巧'},
+    {reasons:['使用场景化沟通','没有偏离销售主题'],conv:'代理人：不买的话以后生病了可别后悔',improve:'用正面表达替代威胁："这款产品的好处是，万一发生风险，您和家人不用为医疗费发愁。"',analysis:'出发点是好的——想让客户意识到风险，但表达方式踩了合规红线。保险销售严禁使用恐吓式语言，必须用正向价值引导。',deduction:'使用恐吓式营销用语，违反合规要求'}
+  ];
+  dims.forEach((d,i)=>{
+    const sc = adjusted[i];
+    const mx = dimWeights[i];
+    const pct = pcts[i];
+    const cl = pct>=80?'#52c41a':pct>=65?'#fa8c16':'#ff4d4f';
+    const dt = dimDetail[i] || {reasons:['—'],conv:'—',improve:'—',analysis:'—',deduction:'—'};
+    r += `<div class="rb">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-weight:600;font-size:14px;">${d}</span>
+        <span style="font-size:18px;font-weight:700;color:${cl};">${sc}<span style="font-size:12px;font-weight:400;color:#999;">/${mx}分</span></span>
+      </div>
+      <div style="height:6px;background:#f0f0f0;border-radius:3px;margin-bottom:10px;"><div class="bar-anim bar-anim-init" id="bar_${i}" style="width:${pct}%;height:100%;background:${cl};border-radius:3px;"></div></div>
+      <div style="font-size:13px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);padding:10px;border-radius:8px;margin-bottom:8px;line-height:1.6;color:#333;">
+        <span style="color:#52c41a;font-weight:500;"><span class="ic ic-sm ic-green">✅</span> 得分原因</span><br>${dt.reasons.map(r=>'• '+r).join('<br>')}</div>
+      <div style="font-size:13px;background:linear-gradient(135deg,#f8fafc,#f1f5f9);padding:10px;border-radius:8px;margin-bottom:8px;line-height:1.6;color:#333;">
+        <span style="color:#999;"><span class="ic ic-sm" style="background:linear-gradient(135deg,#f1f3f4,#e8eaed);color:#666;">📝</span> 对话原文</span><br>${dt.conv}</div>
+      <div style="font-size:13px;background:linear-gradient(135deg,#fff7ed,#ffedd5);padding:10px;border-radius:8px;margin-bottom:8px;line-height:1.6;color:#333;">
+        <span style="color:#fa8c16;font-weight:500;"><span class="ic ic-sm ic-orange">💡</span> 改进建议</span><br>${dt.improve}</div>
+      <div style="font-size:13px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);padding:10px;border-radius:8px;margin-bottom:8px;line-height:1.6;color:#333;">
+        <span style="color:#6C63FF;font-weight:500;"><span class="ic ic-sm">📊</span> 能力详情分析</span><br>${dt.analysis}</div>
+      <div style="font-size:12px;color:#ff4d4f;padding:6px 10px;background:linear-gradient(135deg,#fff1f2,#fecdd3);border-radius:6px;"><span class="ic ic-sm ic-red">📉</span> 失分原因: ${dt.deduction}</div>
+    </div>`;
+  });
+  r += `<div class="rb"><div class="lb"><span class="ic ic-sm ic-green">✅</span> 合规检查</div><div style="font-size:13px;color:#52c41a;">无违规表述 · 未触发红线词</div></div>`;
+  r += `<div class="rb"><div class="lb"><span class="ic ic-sm ic-gold">💯</span> 满分示范对话</div><div style="font-size:13px;color:#666;background:#f5f6fa;padding:10px;border-radius:8px;line-height:1.7;">代理人：张姐，我特别理解您觉得贵的心情。不过您想，50万保额摊到一天才43块钱，一杯咖啡的钱换来50万的保障。<br>客户：这样说好像还行...<br>代理人：而且这款有轻症豁免，万一交费期间出险，后面保费不用交了保障还在。</div></div>`;
+  // exam mode: show result card, no retry/QnA buttons
+  if(_examChal || examMode) {
+    const diffName = ['初级','中级','地狱'][curDiff];
+    const th = examLv[_examLv].diffs[curDiff];
+    r += `<div style="display:flex;gap:8px;margin:12px 0;">
+      <button class="btn btnp btnw" onclick="backToExam()"><span class="ic ic-sm">🏆</span> 查看闯关结果</button>
+    </div>`;
+  } else {
+    r += `<div style="display:flex;gap:8px;margin:12px 0;">
+      <button class="btn btnp btnw" onclick="retryChat()"><span class="ic ic-sm">🔄</span> 再练一次</button>
+      <button class="btn btno btnw" onclick="showQnA()"><span class="ic ic-sm">💬</span> 追问</button>
+    </div>`;
+  }
+  document.getElementById('rpt').innerHTML = r;
+  // Dialog tab
+  const sk = scripts[s.n] || {a:['你好','嗯嗯','好的','再见'],c:['✅','✅','✅','✅'],cases:[[],[],[],[]]};
+    let d = '';
+  sk.a.forEach((m,i)=>{
+    d += `<div class="msg ai" style="margin-bottom:8px;"><div class="av">🤖</div><div class="bub" style="position:relative;">${m}<span class="spk" onclick="playVoice(event,this)" style="position:absolute;right:6px;top:6px;cursor:pointer;opacity:.5;font-size:12px;line-height:1;">🔊</span></div></div>`;
+    if(i < sk.a.length-1) {
+      const cmt = sk.c[i+1] || '';
+      const cases = (sk.cases && sk.cases[i+1]) || [];
+      d += `<div style="display:flex;gap:8px;margin-bottom:12px;flex-direction:row-reverse;margin-left:auto;max-width:90%;">
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">👤</div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+          <div style="background:linear-gradient(135deg,#f8fafc,#f1f5f9);border-radius:8px;padding:10px;font-size:13px;line-height:1.6;color:#333;position:relative;">
+            <span style="color:#999;font-size:11px;"><span class="ic ic-sm" style="background:linear-gradient(135deg,#f1f3f4,#e8eaed);color:#666;">📝</span> 代理人回答（第${i+1}轮）</span><br>（代理人第${i+1}轮回答）
+            <span class="spk" onclick="playVoice(event,this)" style="position:absolute;right:6px;top:6px;cursor:pointer;opacity:.5;font-size:12px;line-height:1;">🔊</span></div>
+          ${(cmt || cases.length>0) ? `<div style="background:linear-gradient(135deg,#fff7ed,#ffedd5);border-radius:8px;padding:10px;font-size:13px;line-height:1.6;color:#333;position:relative;">
+            <span id="fbb_${i}" onclick="toggleFB('fb_${i}',this)" style="position:absolute;cursor:pointer;font-size:13px;color:#bbb;user-select:none;line-height:1;right:6px;top:7px;z-index:1;padding:4px;">^</span>
+            <div id="fb_${i}">
+              ${cmt ? `<div>
+                <span style="color:#fa8c16;font-weight:500;">💡 AI 点评</span><br>${cmt}</div>` : ''}
+              ${cmt && cases.length>0 ? `<div style="height:1px;background:#ffd591;margin:6px 0;"></div>` : ''}
+              ${cases.length>0 ? `<div>
+                <span style="color:#6C63FF;font-weight:500;"><span class="ic ic-sm" style="background:#eef2ff;">💡</span> 优秀案例</span>
+                <div id="casetxt_${i}" style="margin-top:3px;line-height:1.5;">${cases[0]}</div>
+                <div style="text-align:right;margin-top:4px;">
+                  ${cases.length>1 ? `<span id="casecnt_${i}" style="font-size:11px;color:#999;">1/${cases.length}</span> <span onclick="cycleCase(${i}, ${JSON.stringify(cases).replace(/"/g,"'")})" style="font-size:12px;color:#6C63FF;cursor:pointer;">🔄 换一个</span>` : ''}
+                  <span onclick="rateCase(this,1)" style="font-size:13px;cursor:pointer;opacity:.5;">👍</span>
+                  <span onclick="rateCase(this,-1)" style="font-size:13px;cursor:pointer;opacity:.5;">👎</span>
+                </div>
+              </div>` : ''}
+            </div>
+          </div>` : ''}
+        </div>
+      </div>`;
+    }
+  });
+  document.getElementById('dpt').innerHTML = d;
+  document.getElementById('rts').style.display = '';
+  curRptPcts=pcts;
+  showPage('s3');
+  setTimeout(()=>drawRadar('rc',pcts),300);
+  // animate progress bars
+  setTimeout(()=>{
+    document.querySelectorAll('.bar-anim-init').forEach(el=>{
+      el.classList.remove('bar-anim-init');
+    });
+  }, 100);
+}
+
+function swt(tab,idx) {
+  document.querySelectorAll('#rts .ti').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('#rts .ti')[idx].classList.add('on');
+  document.querySelectorAll('#s3 .tc').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('#s3 .tc')[idx].classList.add('on');
+  if(idx===0) setTimeout(()=>drawRadar('rc',curRptPcts),100);
+}
+
+function retryChat() {
+  reversedMode = false;
+  chatStep = 0;
+  const s = curSc;
+  const sk = scripts[s.n] || {a:['您好，开始吧','嗯嗯','好的','再见'],c:['✅','✅','✅','✅']};
+  let h = `<div style="text-align:center;font-size:11px;color:#bbb;padding:4px 0;">${s.n} · 再练（客户话术保持一致）</div>`;
+  h += `<div class="msg ai"><div class="av">🤖</div><div class="bub" style="position:relative;">${sk.a[0]}<span class="spk" onclick="playVoice(event,this)" style="position:absolute;right:6px;top:6px;cursor:pointer;opacity:.5;font-size:12px;line-height:1;">🔊</span></div></div>`;
+  document.getElementById('chatmsgs').innerHTML = h;
+  document.getElementById('chatn').textContent = s.n+'（再练）';
+  document.getElementById('chatInput').value = '';
+  document.getElementById('chatInput').placeholder = '输入你的回答...';
+  showPage('s2');
+  setTimeout(() => {
+    const s2 = document.querySelector('#chatmsgs .msg.ai .spk');
+    if (s2) playVoice(null, s2);
+  }, 400);
+}
+
+function showQnA() {
+  document.getElementById('modalTitle').innerHTML = '<span class="ic ic-sm">💬</span> 追问';
+  document.getElementById('modalBody').innerHTML = `
+    <p style="color:#666;margin-bottom:10px;">你可以针对刚才的对练继续提问：</p>
+    <div class="fg"><textarea id="qaInput" placeholder="例：那我应该怎么回应客户说太贵了？" style="min-height:60px;">那我应该怎么回应客户说"太贵了"？</textarea></div>
+    <button class="btn btnp btnw" onclick="answerQA()">提问</button>
+    <div id="qaAnswer" class="in" style="margin-top:10px;background:#f5f6fa;padding:12px;border-radius:8px;font-size:13px;line-height:1.6;"></div>
+  `;
+  document.getElementById('modal').classList.add('on');
+}
+function answerQA() {
+  document.getElementById('qaAnswer').classList.remove('in');
+  document.getElementById('qaAnswer').innerHTML = `<span class="ic ic-sm ic-orange">💡</span> 建议回答：\n\n"张姐，我特别理解您的感受。不过我们换个角度想，50万的保额分摊到每一天才43块钱，一杯咖啡的钱。万一身体出了状况，家里不用一下子掏几十万的医疗费。"\n\n核心要点：\n1️⃣ 先共情（认可感受）\n2️⃣ 化整为零（年缴→每天）\n3️⃣ 讲风险（激发需求）`;
+}
+
+// FEEDBACK TOGGLE
+function toggleFB(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const isHidden = el.style.display === 'none';
+  el.style.display = isHidden ? 'block' : 'none';
+  btn.textContent = isHidden ? 'v' : '^';
+}
+
+// VOICE PLAY
+let voicePlaying = null;
+function playVoice(e, el) {
+  if (!el) { el = e; e = null; }
+  if (e && e.stopPropagation) e.stopPropagation();
+  if (voicePlaying === el) {
+    el.innerHTML = '🔊';
+    el.style.opacity = '.5';
+    voicePlaying = null;
+    return;
+  }
+  if (voicePlaying) { voicePlaying.innerHTML = '🔊'; voicePlaying.style.opacity = '.5'; }
+  el.innerHTML = '<div class="wave-bars"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>';
+  el.style.opacity = '1';
+  voicePlaying = el;
+  clearTimeout(el._stopTimer);
+  el._stopTimer = setTimeout(() => {
+    if (voicePlaying === el) {
+      el.innerHTML = '🔊';
+      el.style.opacity = '.5';
+      voicePlaying = null;
+    }
+  }, 2000);
+}
+
+// CASE CYCLING & RATING
+const _caseIdx = {};
+function cycleCase(idx, caseTexts) {
+  if (!_caseIdx[idx]) _caseIdx[idx] = 0;
+  _caseIdx[idx] = (_caseIdx[idx] + 1) % caseTexts.length;
+  const txtEl = document.getElementById('casetxt_' + idx);
+  const cntEl = document.getElementById('casecnt_' + idx);
+  if (txtEl) txtEl.textContent = caseTexts[_caseIdx[idx]];
+  if (cntEl) cntEl.textContent = (_caseIdx[idx]+1) + '/' + caseTexts.length;
+}
+function rateCase(el, type) {
+  const parent = el.parentNode;
+  const thumbs = parent.querySelectorAll('span');
+  thumbs.forEach(s => { if(s.textContent.includes('👍')||s.textContent.includes('👎')) s.style.opacity='.3'; });
+  el.style.opacity = '1';
+}
+
+function showCase(idx) {
+  const cases = [
+    {t:'代理人：张姐，我特别理解您觉得贵的心情。但您想，50万保额摊到一天才43块钱，一杯咖啡换50万保障。',s:'优秀代理人王姐'},
+    {t:'代理人：我理解您的顾虑。我们来看看这个方案能解决什么问题——万一得大病，医保报完剩下的部分谁来扛？',s:'销售冠军李哥'},
+    {t:'代理人：您觉得贵是因为看到了支出，但没看到潜在的损失。我给您讲个真实的案例...',s:'培训部张讲师'},
+  ];
+  const c = cases[idx%3];
+  document.getElementById('modalTitle').innerHTML = '<span class="ic ic-sm">💡</span> 优秀案例';
+  document.getElementById('modalBody').innerHTML = `
+    <div style="background:#f5f6fa;padding:10px;border-radius:8px;margin-bottom:6px;">${c.t}</div>
+    <div style="font-size:12px;color:#999;margin-bottom:10px;">来源：${c.s}</div>
+    <div style="display:flex;gap:16px;font-size:16px;justify-content:center;">
+      <span onclick="this.style.opacity=this.style.opacity==='1'?'.5':'1';this.style.color='#6C63FF'" style="cursor:pointer;opacity:.5;"><span class="ic ic-sm">👍</span> 有帮助</span>
+      <span onclick="this.style.opacity=this.style.opacity==='1'?'.5':'1';this.style.color='#ff4d4f'" style="cursor:pointer;opacity:.5;"><span class="ic ic-sm">👎</span> 没帮助</span>
+      <span onclick="showCase(${idx+1})" style="cursor:pointer;opacity:.5;"><span class="ic ic-sm">🔄</span> 换一批</span>
+    </div>`;
+  document.getElementById('modal').classList.add('on');
+}
+
+// TREND LINE
+const trendWeeks=['第1周','第2周','第3周','第4周'];
+const trendTotal=[58,65,70,76];
+const trendDims=[
+  {name:'话术规范',data:[10,12,13,14],max:15,color:'#6C63FF'},
+  {name:'销售逻辑',data:[13,15,16,17],max:20,color:'#fa8c16'},
+  {name:'共情能力',data:[9,10,11,12],max:15,color:'#52c41a'},
+  {name:'异议处理',data:[13,14,16,18],max:20,color:'#ff4d4f'},
+  {name:'促成技巧',data:[12,14,15,16],max:20,color:'#eb2f96'},
+  {name:'合规表现',data:[7,8,8,9],max:10,color:'#1890ff'}
+];
+let curTrendDim=-1; // -1=总分, 0~5=各维度
+function drawTrend(dimIdx){
+  curTrendDim=dimIdx;
+  const c=document.getElementById('trendLine');
+  if(!c) return;
+  const ctx=c.getContext('2d');
+  const w=c.width,h=c.height;
+  const padL=36,padR=16,padT=22,padB=28;
+  const gw=w-padL-padR, gh=h-padT-padB;
+  const isTotal=dimIdx===-1;
+  const scores=isTotal?trendTotal:trendDims[dimIdx].data;
+  const maxScore=isTotal?100:trendDims[dimIdx].max;
+  const lineColor=isTotal?'#6C63FF':trendDims[dimIdx].color;
+  const minV=isTotal?40:0;
+  const maxV=maxScore;
+  const range=maxV-minV;
+  // update tabs highlight
+  document.querySelectorAll('.trend-tab').forEach((tab,i)=>{
+    const active=i===dimIdx+1; // tab 0=总分(dimIdx=-1), tab 1~6=维度0~5
+    tab.style.background=active?lineColor:'#f5f6fa';
+    tab.style.color=active?'#fff':'#666';
+  });
+  ctx.clearRect(0,0,w,h);
+  // horizontal grid + labels
+  ctx.font='9px sans-serif';ctx.fillStyle='#999';ctx.textAlign='right';
+  const step=isTotal?20:Math.ceil(maxScore/5);
+  for(let v=minV;v<=maxV;v+=step){
+    const y=padT+gh-(v-minV)/range*gh;
+    ctx.fillText(isTotal?v:v+'',padL-4,y+3);
+    ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(padL+gw,y);ctx.strokeStyle='#f0f0f0';ctx.lineWidth=1;ctx.stroke();
+  }
+  // week labels
+  ctx.textAlign='center';ctx.fillStyle='#666';ctx.font='10px sans-serif';
+  trendWeeks.forEach((wk,i)=>{
+    const x=padL+i/(trendWeeks.length-1)*gw;
+    ctx.fillText(wk,x,h-6);
+  });
+  // points
+  const pts=scores.map((s,i)=>({
+    x:padL+i/(scores.length-1)*gw,
+    y:padT+gh-((s-minV)/range*gh)
+  }));
+  // gradient fill
+  ctx.beginPath();
+  pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+  ctx.lineTo(pts[pts.length-1].x,padT+gh);ctx.lineTo(pts[0].x,padT+gh);ctx.closePath();
+  const grad=ctx.createLinearGradient(0,padT,0,padT+gh);
+  const baseColor=lineColor.replace('#','');
+  const r=parseInt(baseColor.substring(0,2),16),g=parseInt(baseColor.substring(2,4),16),b=parseInt(baseColor.substring(4,6),16);
+  grad.addColorStop(0,`rgba(${r},${g},${b},0.25)`);
+  grad.addColorStop(1,`rgba(${r},${g},${b},0.02)`);
+  ctx.fillStyle=grad;ctx.fill();
+  // line
+  ctx.beginPath();pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+  ctx.strokeStyle=lineColor;ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.stroke();
+  // dots + labels
+  pts.forEach((p,i)=>{
+    ctx.beginPath();ctx.arc(p.x,p.y,4,0,2*Math.PI);ctx.fillStyle=lineColor;ctx.fill();
+    ctx.beginPath();ctx.arc(p.x,p.y,2,0,2*Math.PI);ctx.fillStyle='#fff';ctx.fill();
+    ctx.font='bold 10px sans-serif';ctx.fillStyle=lineColor;ctx.textAlign='center';
+    const label=isTotal?scores[i]+'分':scores[i]+'/'+maxScore;
+    ctx.fillText(label,p.x,p.y-10);
+  });
+}
+
+// RADAR
+function drawRadar(id,vals) {
+  const c = document.getElementById(id);
+  if(!c) return;
+  const ctx = c.getContext('2d');
+  const w=c.width,h=c.height,cx=w/2,cy=h/2,r=Math.min(w,h)/2-50,n=dims.length,st=2*Math.PI/n,off=-Math.PI/2;
+  if(c._raf) cancelAnimationFrame(c._raf);
+  const dur=1800,start=performance.now();
+  function frame(now){
+    const t=Math.min((now-start)/dur,1);
+    const ease=1-Math.pow(1-t,3);
+    ctx.clearRect(0,0,w,h);
+    // grid
+    for(let ri=1;ri<=4;ri++){
+      ctx.beginPath();const rr=r*ri/4;
+      for(let i=0;i<=n;i++){const a=off+i*st;i===0?ctx.moveTo(cx+rr*Math.cos(a),cy+rr*Math.sin(a)):ctx.lineTo(cx+rr*Math.cos(a),cy+rr*Math.sin(a));}
+      ctx.strokeStyle='#e8e8e8';ctx.lineWidth=1;ctx.stroke();
+    }
+    for(let i=0;i<n;i++){const a=off+i*st;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+r*Math.cos(a),cy+r*Math.sin(a));ctx.strokeStyle='#e8e8e8';ctx.stroke();}
+    // polygon expanding from center
+    ctx.beginPath();
+    for(let i=0;i<=n;i++){const idx=i%n,a=off+idx*st,v=vals[idx]*ease/100*r;i===0?ctx.moveTo(cx+v*Math.cos(a),cy+v*Math.sin(a)):ctx.lineTo(cx+v*Math.cos(a),cy+v*Math.sin(a));}
+    ctx.fillStyle='rgba(108,99,255,0.15)';ctx.fill();ctx.strokeStyle='#6C63FF';ctx.lineWidth=2.5;ctx.stroke();
+    // labels fade in
+    ctx.globalAlpha=ease;
+    ctx.fillStyle='#666';ctx.font='11px sans-serif';ctx.textAlign='center';
+    for(let i=0;i<n;i++){const a=off+i*st;ctx.fillText(dims[i],cx+(r+22)*Math.cos(a),cy+(r+22)*Math.sin(a)+4);}
+    // dots
+    ctx.globalAlpha=1;
+    for(let i=0;i<n;i++){const a=off+i*st,v=vals[i]*ease/100*r;
+      ctx.beginPath();ctx.arc(cx+v*Math.cos(a),cy+v*Math.sin(a),3+ease*2,0,2*Math.PI);ctx.fillStyle='#6C63FF';ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    if(t<1) c._raf=requestAnimationFrame(frame);
+  }
+  c._raf=requestAnimationFrame(frame);
+}
+
+// HISTORY
+function renderHL(f) {
+  // build aggregation cards for scenes with multiple records
+  let h = '';
+  const sceneCounts = {};
+  hdata.forEach(d => { sceneCounts[d.sc] = (sceneCounts[d.sc]||0) + 1; });
+  const multiScenes = Object.entries(sceneCounts).filter(([_,c])=>c>=2).sort((a,b)=>b[1]-a[1]);
+  if(multiScenes.length > 0) {
+    multiScenes.forEach(([scId, count])=>{
+      const s = SC.find(x=>x.id===scId);
+      const records = hdata.filter(d=>d.sc===scId).sort((a,b)=>a.dt.localeCompare(b.dt));
+      const first=records[0].sc2, last=records[records.length-1].sc2;
+      const diff=last-first;
+      const trendColor=diff>=0?'#52c41a':'#ff4d4f';
+      const trendIcon=diff>=0?'↑':'↓';
+      h += `<div class="ag" onclick="showAgg('${scId}')"><div class="agt"><span class="ic ic-sm">📈</span> ${s?s.n:scId} <span class="scnum">${count}次</span></div><div style="display:flex;align-items:center;gap:4px;margin-top:6px;font-size:12px;color:#999;">${records.map((r,i)=>{
+        const color = r.sc2>=80?'#52c41a':r.sc2>=65?'#fa8c16':'#ff4d4f';
+        return `<span style="color:${color};font-weight:600;">${r.sc2}</span>`;
+      }).join('<span style="color:#ccc;">→</span>')}</div></div>`;
+    });
+  }
+  let data = [...hdata];
+  if(f==='今天') data=data.filter(d=>d.dt.startsWith('2026-07-02'));
+  else if(f==='本周') data=data.filter(d=>d.dt>='2026-06-29');
+  else if(f==='本月') data=data.filter(d=>d.dt.startsWith('2026-07')||d.dt.startsWith('2026-06'));
+  // individual records: skip scenes that are already aggregated (≥2 records)
+  const aggregatedScenes = new Set(multiScenes.map(([scId])=>scId));
+  data = data.filter(d => !aggregatedScenes.has(d.sc));
+  data.forEach(d=>{
+    const s=SC.find(x=>x.id===d.sc);
+    const cl=d.sc2>=80?'#52c41a':d.sc2>=65?'#fa8c16':'#ff4d4f';
+    h += `<div class="sc" onclick="showHistoryDetail(${d.id})"><div class="sct"><span class="nm">${d.sc} ${s?s.n:''}</span><span style="font-weight:700;color:${cl};font-size:18px;">${d.sc2}</span></div><div style="display:flex;gap:8px;font-size:11px;color:#999;margin-top:2px;"><span>${d.dt}</span><span>${d.lv}</span><span>${d.tm}</span><span>${d.rd}轮</span></div></div>`;
+  });
+  document.getElementById('hl').innerHTML = h;
+}
+
+function filterHL(f,el) {
+  // close search if open
+  if(document.getElementById('hsearch').classList.contains('on')) closeSearchHL();
+  document.querySelectorAll('#hfb .fbtn').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
+  renderHL(f);
+}
+
+function showAgg(scId) {
+  setTitle('同场景聚合');
+  const s = SC.find(x=>x.id===scId);
+  const records = hdata.filter(d=>d.sc===scId).sort((a,b)=>a.dt.localeCompare(b.dt));
+  const count = records.length;
+  // trend display
+  let trendHtml = '<div style="font-size:16px;font-weight:400;">';
+  records.forEach((r,i)=>{
+    const color = r.sc2>=80?'#52c41a':r.sc2>=65?'#fa8c16':'#ff4d4f';
+    trendHtml += (i>0?' → ':'') + `<span style="font-size:28px;color:${color};font-weight:700;">${r.sc2}</span>`;
+  });
+  trendHtml += '</div>';
+  // dimension bars (simulated improvement from first to last)
+  const firstScore = records[0].sc2;
+  const lastScore = records[count-1].sc2;
+  const seed = parseInt(scId.replace('S',''));
+  const dimW = [15,20,15,20,20,10];
+  const firstEarned = dimW.map((w,i)=>Math.max(Math.round(w*0.5), Math.round(w*((seed+i*7)%100)/100*0.35+w*0.5)));
+  const lastEarned = dimW.map((w,i)=>Math.min(w, firstEarned[i]+Math.round(w*((seed+i*3)%10)/10*0.3)));
+  let dimHtml = '';
+  dims.forEach((d,i)=>{
+    const pct = Math.round(lastEarned[i]/dimW[i]*100);
+    const diff = lastEarned[i]-firstEarned[i];
+    const cl = diff>=8?'#52c41a':diff>=4?'#fa8c16':'#ddd';
+    dimHtml += `<div class="di"><span class="dn">${d}</span><div class="db"><div class="fl bar-anim bar-anim-init" style="width:${pct}%;background:${cl};"></div></div><span class="ds ${diff>0?'up':'dn'}">${diff>0?'↑':''}${diff}</span></div>`;
+  });
+  // records list for this scene
+  let recListHtml = '';
+  records.forEach((r,i)=>{
+    const cl = r.sc2>=80?'#52c41a':r.sc2>=65?'#fa8c16':'#ff4d4f';
+    recListHtml += `<div class="sc" onclick="showHistoryDetail(${r.id})"><div class="sct"><span class="nm">第${i+1}次 · ${r.dt.slice(0,10)}</span><span style="font-weight:700;color:${cl};font-size:16px;">${r.sc2}分</span></div><div style="display:flex;gap:8px;font-size:11px;color:#999;margin-top:2px;"><span>${r.lv}</span><span>${r.tm}</span><span>${r.rd}轮</span></div></div>`;
+  });
+  document.getElementById('agc').innerHTML = `
+    <div class="rb" style="text-align:center;"><div class="lb">${scId} ${s?s.n:''} · ${count}次练习趋势</div>${trendHtml}</div>
+    <div class="rb"><div class="lb"><span class="ic ic-sm">📊</span> 各维度提升（第1次→第${count}次）</div>${dimHtml}</div>
+    <div class="stitle"><span class="ic">📋</span> 练习记录 (${count}次)</div>
+    ${recListHtml}
+    <button class="btn btno btnw" onclick="showCompare('${scId}')"><span class="ic ic-sm">📊</span> 对比模式: 任选2次对比</button>`;
+  showPage('s5');
+  setTimeout(()=>document.querySelectorAll('.bar-anim-init').forEach(el=>el.classList.remove('bar-anim-init')),100);
+}
+
+let _cmpSelected = [];
+function showCompare(scId) {
+  setTitle('选择对比记录');
+  _cmpSelected = [];
+  const s = SC.find(x=>x.id===scId);
+  const records = hdata.filter(d=>d.sc===scId).sort((a,b)=>a.dt.localeCompare(b.dt));
+  let h = `<div class="rb" style="text-align:center;"><div class="lb">${scId} ${s?s.n:''} · 请选择2次记录对比</div></div>`;
+  h += '<div id="cmpList">';
+  records.forEach((r,i)=>{
+    const cl = r.sc2>=80?'#52c41a':r.sc2>=65?'#fa8c16':'#ff4d4f';
+    h += `<div class="sc" id="cmp${r.id}" onclick="toggleCmp(${r.id},${i+1},'${scId}')"><div class="sct"><span class="nm">第${i+1}次 · ${r.dt.slice(0,10)}<span id="cmpChk${r.id}" style="margin-left:6px;font-size:14px;color:#6C63FF;opacity:0;">☑</span></span><span style="font-weight:700;color:${cl};font-size:16px;">${r.sc2}分</span></div><div style="display:flex;gap:8px;font-size:11px;color:#999;margin-top:2px;"><span>${r.lv}</span><span>${r.tm}</span><span>${r.rd}轮</span></div></div>`;
+  });
+  h += '</div>';
+  h += '<div id="cmpBtn" style="padding:12px 14px;text-align:center;"><button class="btn btno btnw" disabled id="cmpGoBtn" onclick="doCmp(\''+scId+'\')">开始对比</button></div>';
+  document.getElementById('cpc').innerHTML = h;
+  showPage('s6');
+}
+function toggleCmp(id, nth, scId) {
+  const idx = _cmpSelected.indexOf(id);
+  if(idx>=0) {
+    _cmpSelected.splice(idx,1);
+    document.getElementById('cmp'+id).style.border='1.5px solid #e8e8e8';
+    document.getElementById('cmp'+id).style.background='#fff';
+    document.getElementById('cmpChk'+id).style.opacity='0';
+  } else {
+    if(_cmpSelected.length>=2) return; // max 2
+    _cmpSelected.push(id);
+    document.getElementById('cmp'+id).style.border='1.5px solid #6C63FF';
+    document.getElementById('cmp'+id).style.background='#eef2ff';
+    document.getElementById('cmpChk'+id).style.opacity='1';
+  }
+  const btn = document.getElementById('cmpGoBtn');
+  if(_cmpSelected.length===2) {
+    btn.disabled=false;
+    btn.classList.remove('btno');btn.classList.add('btnp');
+  } else {
+    btn.disabled=true;
+    btn.classList.remove('btnp');btn.classList.add('btno');
+  }
+}
+function doCmp(scId) {
+  if(_cmpSelected.length!==2) return;
+  setTitle('对比结果');
+  const s = SC.find(x=>x.id===scId);
+  const allRecs = hdata.filter(d=>d.sc===scId).sort((a,b)=>a.dt.localeCompare(b.dt));
+  const rA = hdata.find(d=>d.id===_cmpSelected[0]);
+  const rB = hdata.find(d=>d.id===_cmpSelected[1]);
+  const nthA = allRecs.findIndex(r=>r.id===rA.id)+1;
+  const nthB = allRecs.findIndex(r=>r.id===rB.id)+1;
+  const clA = rA.sc2>=80?'#52c41a':rA.sc2>=65?'#fa8c16':'#ff4d4f';
+  const clB = rB.sc2>=80?'#52c41a':rB.sc2>=65?'#fa8c16':'#ff4d4f';
+  // dialog comparison
+  const sk = scripts[s?s.n:''] || {a:['你好','嗯嗯','好的','再见'],c:['✅','✅','✅','✅'],cases:[[],[],[],[]]};
+  const badResp = sk.cases && sk.cases[1] && sk.cases[1].length>0 ? sk.cases[1][0].split('：')[1]||sk.cases[1][0] : '代理人：这个价格其实很合理了，您再考虑考虑？';
+  const goodResp = sk.a.length>2 ? sk.a[2] : '代理人：张姐，我特别理解您觉得贵的心情。不过50万保额摊到一天才43块钱...';
+  // pick which is "better" based on score
+  const isABetter = rA.sc2 >= rB.sc2;
+  const betterResp = isABetter ? goodResp : badResp;
+  const worseResp = isABetter ? badResp : goodResp;
+  const betterLabel = isABetter ? `第${nthA}次` : `第${nthB}次`;
+  const worseLabel = isABetter ? `第${nthB}次` : `第${nthA}次`;
+  // dimension comparison
+  const dimWeights2 = [15,20,15,20,20,10];
+  const seedA = rA.id*13, seedB = rB.id*13;
+  const earnedA = dimWeights2.map((w,i)=>{const b=Math.round(w*((seedA+i*7)%100)/100*0.35+w*0.6);return Math.max(Math.round(w*0.5),Math.min(w,b));});
+  const earnedB = dimWeights2.map((w,i)=>{const b=Math.round(w*((seedB+i*7)%100)/100*0.35+w*0.6);return Math.max(Math.round(w*0.5),Math.min(w,b));});
+  // normalize
+  earnedA.forEach((v,i)=>{if(i===3){earnedA[i]=rA.sc2-earnedA.reduce((a,b,j)=>j===3?a:a+b,0);earnedA[i]=Math.max(Math.round(dimWeights2[3]*0.5),Math.min(dimWeights2[3],earnedA[i]));}});
+  earnedB.forEach((v,i)=>{if(i===3){earnedB[i]=rB.sc2-earnedB.reduce((a,b,j)=>j===3?a:a+b,0);earnedB[i]=Math.max(Math.round(dimWeights2[3]*0.5),Math.min(dimWeights2[3],earnedB[i]));}});
+  const dims2 = ['异议处理','需求挖掘','产品讲解','促成能力','沟通表达','合规意识'];
+  let dimCmpHtml = '';
+  dims2.forEach((d,i)=>{
+    const pctA=Math.round(earnedA[i]/dimWeights2[i]*100), pctB=Math.round(earnedB[i]/dimWeights2[i]*100);
+    const diff=earnedB[i]-earnedA[i];
+    const diffCl=diff>=2?'#52c41a':diff<=-2?'#ff4d4f':'#999';
+    const diffTxt=diff>0?'↑'+diff:diff<0?'↓'+Math.abs(diff):'持平';
+    dimCmpHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:6px 0;font-size:13px;"><span style="width:80px;flex-shrink:0;color:#666;">${d}</span><div style="flex:1;display:flex;align-items:center;gap:4px;"><span style="font-size:12px;color:${clA};">${pctA}%</span><div style="flex:1;height:8px;background:#eee;border-radius:4px;overflow:hidden;position:relative;"><div style="width:${pctA}%;height:100%;background:${clA};border-radius:4px;"></div></div><span style="font-size:12px;color:${clB};">${pctB}%</span><div style="flex:1;height:8px;background:#eee;border-radius:4px;overflow:hidden;position:relative;"><div style="width:${pctB}%;height:100%;background:${clB};border-radius:4px;"></div></div></div><span style="color:${diffCl};font-size:12px;font-weight:500;width:40px;text-align:right;">${diffTxt}</span></div>`;
+  });
+  document.getElementById('cpc').innerHTML = `
+    <div class="rb" style="text-align:center;"><div class="lb">${scId} ${s?s.n:''} · 第${nthA}次 vs 第${nthB}次</div></div>
+    <div style="display:flex;gap:8px;">
+      <div class="rb" style="flex:1;text-align:center;"><div class="lb">第${nthA}次 · ${rA.dt.slice(0,10)}</div><div class="vl" style="font-size:32px;color:${clA};">${rA.sc2}<span class="u">分</span></div></div>
+      <div class="rb" style="flex:1;text-align:center;"><div class="lb">第${nthB}次 · ${rB.dt.slice(0,10)}</div><div class="vl" style="font-size:32px;color:${clB};">${rB.sc2}<span class="u">分</span></div></div>
+    </div>
+    <div class="rb"><div class="lb"><span class="ic ic-sm">📊</span> 各维度对比</div>${dimCmpHtml}</div>
+    <div class="rb"><div class="lb"><span class="ic ic-sm">📈</span> 对话对比</div>
+      <div style="background:linear-gradient(135deg,#fff1f2,#fecdd3);padding:10px;border-radius:8px;margin-bottom:6px;font-size:13px;">
+        <span style="color:#ff4d4f;font-weight:600;">${worseLabel}：</span>${escHtml(worseResp)}<br><span style="color:#ff4d4f;font-size:11px;">❌ ${isABetter?'后者':'前者'}表现更优</span>
+      </div>
+      <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);padding:10px;border-radius:8px;font-size:13px;">
+        <span style="color:#52c41a;font-weight:600;">${betterLabel}：</span>${escHtml(betterResp)}<br><span style="color:#52c41a;font-size:11px;">✅ ${isABetter?'前者':'后者'}有明显提升</span>
+      </div>
+    </div>
+    <div style="padding:12px 14px;text-align:center;"><button class="btn btno btnw" onclick="showCompare('${scId}')">重新选择</button></div>`;
+}
+
+function showHistoryDetail(id) {
+  const d = hdata.find(x=>x.id===id);
+  if(!d) return;
+  const s = SC.find(x=>x.id===d.sc);
+  curSc = s || {n:d.sc};
+  const dimWeights2 = [15,20,15,20,20,10];
+  const seed2 = d.id * 13;
+  const earned2 = dimWeights2.map((w,i) => {
+    const base = Math.round(w * ((seed2 + i*7) % 100) / 100 * 0.35 + w * 0.6);
+    return Math.max(Math.round(w*0.5), Math.min(w, base));
+  });
+  const total2 = d.sc2;
+  // normalize to match total2
+  const rawTotal = earned2.reduce((a,b)=>a+b,0);
+  const diff = total2 - rawTotal;
+  if(diff !== 0) {
+    const adjustIdx = diff > 0 ? 3 : 1;
+    earned2[adjustIdx] = Math.max(Math.round(dimWeights2[adjustIdx]*0.5), Math.min(dimWeights2[adjustIdx], earned2[adjustIdx] + diff));
+  }
+  const pcts2 = dims.map((_,i) => Math.round(earned2[i] / dimWeights2[i] * 100));
+  const isFromMember = !!_memberReturn;
+  setTitle('练习详情');
+  let r = `<div class="rb" style="text-align:center;"><div class="lb">${d.sc} ${s?s.n:''} · ${d.dt}</div><div class="vl" style="font-size:36px;">${total2}<span class="u">分</span></div></div>`;
+  r += `<div class="rb"><div class="lb"><span class="ic ic-sm">📊</span> 六维评分</div><canvas id="rch" width="320" height="320" style="margin:0 auto;display:block;max-width:100%;height:auto;"></canvas></div>`;
+  r += `<div class="rb" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);border:1px solid #dde4ff;"><div class="lb"><span class="ic ic-sm">📋</span> 综合评价</div><div style="font-size:13px;line-height:1.7;color:#333;">${total2>=75?'整体表现良好，话术规范性和合规意识不错。':'综合表现中等，销售逻辑和促成技巧是主要短板。建议加强需求分析阶段的训练。'}</div></div>`;
+  const dimDetail2 = [
+    {reasons:['开场问候得体','用语专业不浮夸','语气温和有礼'],conv:'代理人：这个价格已经很合理了，您再考虑考虑？',improve:'建议用"价值-价格"顺序：先强调保额覆盖的风险缺口，再用"日均43元"化整为零。',analysis:'话术框架基本正确，开场和基础用语规范。但在价值塑造环节缺乏技巧。',deduction:'客户说贵时直接反驳，未先共情'},
+    {reasons:['主动询问客户需求','方案讲解有条理'],conv:'代理人：我们这款产品保障很全面，是市场上最好的',improve:'应先用SPIN提问法挖掘客户痛点，再针对性给出方案。',analysis:'销售逻辑不够清晰，跳过了最关键的需求分析环节。',deduction:'跳过需求分析直接推销，销售逻辑缺失'},
+    {reasons:['使用开放式提问','给客户表达空间'],conv:'代理人：您觉得贵是因为没看到价值，了解了就不觉得贵了',improve:'先换位思考："张姐，我特别理解您觉得贵的心情。"',analysis:'有共情意识但表达生硬，"您觉得贵是因为"句式带有说教感。',deduction:'共情表达生硬，"您觉得贵是因为"带有说教感'},
+    {reasons:['认真听取了客户对比信息','未与客户争论'],conv:'代理人：闺蜜的产品跟我们不一样，没有可比性',improve:'先认可客户信息来源，再用客观数据做对比分析。',analysis:'面对竞品对比时防御性过强，简单否定有损专业形象。',deduction:'简单否定客户信息来源，未做客观竞品分析'},
+    {reasons:['尝试推进签单流程','主动询问顾虑'],conv:'代理人：那您还有什么顾虑？说出来我帮您解决',improve:'用二选一法引导客户做选择，而非给犹豫空间。',analysis:'有促成意识但技巧不足。"还有什么顾虑"等于在暗示"你应该有顾虑"。',deduction:'被动等待而非主动促成，缺乏促成技巧'},
+    {reasons:['使用场景化沟通','没有偏离销售主题'],conv:'代理人：不买的话以后生病了可别后悔',improve:'用正面表达替代威胁："万一发生风险，您和家人不用为医疗费发愁。"',analysis:'想唤醒风险意识但方式踩了合规红线，须用正向价值引导。',deduction:'使用恐吓式营销用语，违反合规要求'}
+  ];
+  dims.forEach((di,i)=>{
+    const sc = earned2[i];
+    const mx = dimWeights2[i];
+    const pct = pcts2[i];
+    const cl = pct>=80?'#52c41a':pct>=65?'#fa8c16':'#ff4d4f';
+    const dt = dimDetail2[i] || {reasons:['—'],conv:'—',improve:'—',analysis:'—',deduction:'—'};
+    r += `<div class="rb">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-weight:600;font-size:14px;">${di}</span>
+        <span style="font-size:18px;font-weight:700;color:${cl};">${sc}<span style="font-size:12px;font-weight:400;color:#999;">/${mx}分</span></span>
+      </div>
+      <div style="height:6px;background:#f0f0f0;border-radius:3px;margin-bottom:10px;"><div class="bar-anim bar-anim-init" id="bar_${i}" style="width:${pct}%;height:100%;background:${cl};border-radius:3px;"></div></div>
+      <div style="font-size:13px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);padding:10px;border-radius:8px;margin-bottom:8px;line-height:1.6;color:#333;">
+        <span style="color:#52c41a;font-weight:500;"><span class="ic ic-sm ic-green">✅</span> 得分原因</span><br>${dt.reasons.map(r=>'• '+r).join('<br>')}</div>
+      <div style="font-size:13px;background:linear-gradient(135deg,#f8fafc,#f1f5f9);padding:10px;border-radius:8px;margin-bottom:8px;line-height:1.6;color:#333;">
+        <span style="color:#999;"><span class="ic ic-sm" style="background:linear-gradient(135deg,#f1f3f4,#e8eaed);color:#666;">📝</span> 对话原文</span><br>${dt.conv}</div>
+      <div style="font-size:13px;background:linear-gradient(135deg,#fff7ed,#ffedd5);padding:10px;border-radius:8px;margin-bottom:8px;line-height:1.6;color:#333;">
+        <span style="color:#fa8c16;font-weight:500;"><span class="ic ic-sm ic-orange">💡</span> 改进建议</span><br>${dt.improve}</div>
+      <div style="font-size:13px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);padding:10px;border-radius:8px;margin-bottom:8px;line-height:1.6;color:#333;">
+        <span style="color:#6C63FF;font-weight:500;"><span class="ic ic-sm">📊</span> 能力详情分析</span><br>${dt.analysis}</div>
+      <div style="font-size:12px;color:#ff4d4f;padding:6px 10px;background:linear-gradient(135deg,#fff1f2,#fecdd3);border-radius:6px;"><span class="ic ic-sm ic-red">📉</span> 失分原因: ${dt.deduction}</div>
+    </div>`;
+  });
+  r += `<div style="display:flex;gap:8px;">${isFromMember?'':`<button class="btn btnp btnw" onclick="retryChat()"><span class="ic ic-sm">🔄</span> 再练一次</button><button class="btn btno btnw" onclick="showQnA()"><span class="ic ic-sm">💬</span> 追问</button>`}</div>`;
+  document.getElementById('rpt').innerHTML = r;
+  // Show in report screen dialog tab also
+  const sk2 = scripts[s?s.n:''] || {a:['您好','嗯嗯','好的','再见'],c:['✅','✅','✅','✅'],cases:[[],[],[],[]]};
+    let dh = '';
+  sk2.a.forEach((m,i)=>{
+    dh += `<div class="msg ai" style="margin-bottom:8px;"><div class="av">🤖</div><div class="bub" style="position:relative;">${m}<span class="spk" onclick="playVoice(event,this)" style="position:absolute;right:6px;top:6px;cursor:pointer;opacity:.5;font-size:12px;line-height:1;">🔊</span></div></div>`;
+    if(i < sk2.a.length-1) {
+      const cmt2 = sk2.c[i+1] || '';
+      const cases2 = (sk2.cases && sk2.cases[i+1]) || [];
+      dh += `<div style="display:flex;gap:8px;margin-bottom:12px;flex-direction:row-reverse;margin-left:auto;max-width:90%;">
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">👤</div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+          <div style="background:linear-gradient(135deg,#f8fafc,#f1f5f9);border-radius:8px;padding:10px;font-size:13px;line-height:1.6;color:#333;position:relative;">
+            <span style="color:#999;font-size:11px;"><span class="ic ic-sm" style="background:linear-gradient(135deg,#f1f3f4,#e8eaed);color:#666;">📝</span> 代理人回答（第${i+1}轮）</span><br>（代理人第${i+1}轮）
+            <span class="spk" onclick="playVoice(event,this)" style="position:absolute;right:6px;top:6px;cursor:pointer;opacity:.5;font-size:12px;line-height:1;">🔊</span></div>
+          ${(cmt2 || cases2.length>0) ? `<div style="background:linear-gradient(135deg,#fff7ed,#ffedd5);border-radius:8px;padding:10px;font-size:13px;line-height:1.6;color:#333;position:relative;">
+            <span id="fbb_h${i}" onclick="toggleFB('fb_h${i}',this)" style="position:absolute;cursor:pointer;font-size:13px;color:#bbb;user-select:none;line-height:1;right:6px;top:7px;z-index:1;padding:4px;">^</span>
+            <div id="fb_h${i}">
+              ${cmt2 ? `<div>
+                <span style="color:#fa8c16;font-weight:500;">💡 AI 点评</span><br>${cmt2}</div>` : ''}
+              ${cmt2 && cases2.length>0 ? `<div style="height:1px;background:#ffd591;margin:6px 0;"></div>` : ''}
+              ${cases2.length>0 ? `<div>
+                <span style="color:#6C63FF;font-weight:500;"><span class="ic ic-sm" style="background:#eef2ff;">💡</span> 优秀案例</span>
+                <div id="casetxt_h${i}" style="margin-top:3px;line-height:1.5;">${cases2[0]}</div>
+                <div style="text-align:right;margin-top:4px;">
+                  ${cases2.length>1 ? `<span id="casecnt_h${i}" style="font-size:11px;color:#999;">1/${cases2.length}</span> <span onclick="cycleCase('h${i}', ${JSON.stringify(cases2).replace(/"/g,"'")})" style="font-size:12px;color:#6C63FF;cursor:pointer;">🔄 换一个</span>` : ''}
+                  <span onclick="rateCase(this,1)" style="font-size:13px;cursor:pointer;opacity:.5;">👍</span>
+                  <span onclick="rateCase(this,-1)" style="font-size:13px;cursor:pointer;opacity:.5;">👎</span>
+                </div>
+              </div>` : ''}
+            </div>
+          </div>` : ''}
+        </div>
+      </div>`;
+    }
+  });
+  document.getElementById('dpt').innerHTML = dh;
+  document.getElementById('rts').style.display = '';
+  document.querySelectorAll('#rts .ti').forEach((x,i)=>x.classList.toggle('on',i===0));
+  document.querySelectorAll('#s3 .tc').forEach((x,i)=>x.classList.toggle('on',i===0));
+  showPage('s3');
+  setTimeout(()=>drawRadar('rch',pcts2),200);
+}
+
+// MY SCENARIOS
+function renderMySc() {
+  let h='';
+  if(myScs.length === 0) {
+    h = `<div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">暂无自定义场景</div><button class="btn btnp" onclick="resetCreatePage();setTitle('创建自定义场景');showPage('s10')">创建一个</button></div>`;
+  } else {
+    myScs.forEach((m,i)=>{
+      const actions = m.c === 0
+        ? `<span style="font-size:11px;color:#6C63FF;cursor:pointer;margin-left:6px;" onclick="event.stopPropagation();editMySc(${i})">✏️ 编辑</span><span style="font-size:11px;color:#ff4d4f;cursor:pointer;margin-left:6px;" onclick="event.stopPropagation();deleteMySc(${i})">🗑 删除</span>`
+        : '';
+      h += `<div class="sc" onclick="gotoMyScDetail(${i})"><div class="sct"><span class="nm">${m.n}</span><div style="display:flex;align-items:center;gap:4px;"><span style="font-size:11px;color:#999;">已练${m.c}次</span>${actions}</div></div><div class="scd">${m.d}</div></div>`;
+    });
+  }
+  document.getElementById('msl').innerHTML = h;
+  document.getElementById('msc2').textContent = myScs.length;
+}
+
+function gotoMyScDetail(idx) {
+  const m = myScs[idx];
+  curSc = {id:'MY'+idx, n:m.n, c:'自定义', p:2, s:3, d:m.d};
+  curMyScIdx = idx;
+  // register custom scenario script if it has profile/rules data
+  if(m.profile || m.rules) {
+    const customLines = m.profile ? m.profile.split('\n').filter(l=>l.trim()) : [];
+    const clientMsgs = ['您好，我正好想了解一下保险方面的事情。','嗯，你说的有一定道理，但我还是有些顾虑。','好吧，那你能再详细解释一下吗？','我回去再想想。','听起来还可以，但我需要更多信息才能做决定。'];
+    scripts[m.n] = {a:clientMsgs, c:['✅ 自然开场','⚠️ 需要更有针对性地回应','✅ 客户愿意继续了解','⚠️ 挖掘犹豫的真实原因','✅ 客户保持兴趣'], cases:[[],[],[],[],[]]};
+  }
+  setTitle(m.n);
+  const editDelBtns = m.c === 0
+    ? `<div style="display:flex;gap:8px;margin-top:8px;"><button class="btn btno btnw" onclick="editMySc(${idx})"><span class="ic ic-sm">✏️</span> 编辑场景</button><button class="btn btno btnw" style="color:#ff4d4f;border-color:#ff4d4f;" onclick="deleteMySc(${idx})"><span class="ic ic-sm ic-red">🗑</span> 删除场景</button></div>`
+    : '';
+  document.getElementById('s1c').innerHTML = `
+    <div class="rb" style="text-align:center;"><div class="lb">自定义场景</div><div style="font-size:20px;font-weight:600;">${m.n}</div><div style="font-size:13px;color:#666;margin-top:4px;text-align:left;line-height:1.5;">${m.d}</div><div style="margin-top:6px;display:flex;gap:6px;justify-content:center;"><span class="tag">自定义</span><span class="bp2">Phase 2</span></div></div>
+    <div class="stitle"><span class="ic">🎯</span> 难度选择</div>
+    <div class="lc">
+      <div class="lci on" onclick="selLv(this)"><div class="lv">初级</div><div class="ld">客户配合度高</div></div>
+      <div class="lci" onclick="selLv(this)"><div class="lv">中级</div><div class="ld">客户有犹豫</div></div>
+      <div class="lci" onclick="selLv(this)"><div class="lv">地狱级</div><div class="ld">全程抗拒+挑刺</div></div>
+    </div>
+    <button class="btn btnp btnw btnl" style="margin-top:2px;" onclick="startChat()"><span class="ic ic-sm">🚀</span> 开始对练</button>
+    ${editDelBtns}`;
+  showPage('s1');
+}
+
+function editMySc(idx) {
+  const m = myScs[idx];
+  document.getElementById('modalTitle').innerHTML = '<span class="ic ic-sm">✏️</span> 编辑场景';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="fg"><label>场景名称</label><input id="emName" value="${escHtml(m.n)}" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:8px;font-size:14px;outline:none;"></div>
+    <div class="fg"><label>场景描述</label><textarea id="emDesc" style="min-height:80px;width:100%;padding:10px 12px;border:1px solid #e8e8e8;border-radius:8px;font-size:14px;outline:none;font-family:inherit;">${escHtml(m.d)}</textarea></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn btnp btnw" onclick="saveMyScEdit(${idx})"><span class="ic ic-sm ic-green">✅</span> 保存</button>
+      <button class="btn btno btnw" onclick="document.getElementById('modal').classList.remove('on')">取消</button>
+    </div>`;
+  document.getElementById('modal').classList.add('on');
+}
+
+function saveMyScEdit(idx) {
+  const name = document.getElementById('emName').value.trim();
+  const desc = document.getElementById('emDesc').value.trim();
+  if(!name) { showToast('场景名称不能为空'); return; }
+  myScs[idx].n = name;
+  myScs[idx].d = desc;
+  localStorage.setItem('aiMyScs', JSON.stringify(myScs));
+  renderMySc();
+  document.getElementById('modal').classList.remove('on');
+  showToast('✅ 场景已更新');
+  // refresh detail page if currently viewing this scenario
+  if(curMyScIdx === idx) gotoMyScDetail(idx);
+}
+
+function deleteMySc(idx) {
+  const m = myScs[idx];
+  // use the end overlay modal to confirm
+  document.getElementById('modalTitle').innerHTML = '<span class="ic ic-sm ic-red">🗑</span> 删除场景';
+  document.getElementById('modalBody').innerHTML = `
+    <p style="color:#666;">确定删除「${escHtml(m.n)}」？删除后不可恢复。</p>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="btn btno btnw" onclick="document.getElementById('modal').classList.remove('on')">取消</button>
+      <button class="btn btnp btnw" style="background:#ff4d4f;" onclick="confirmDeleteMySc(${idx})">确认删除</button>
+    </div>`;
+  document.getElementById('modal').classList.add('on');
+}
+
+function confirmDeleteMySc(idx) {
+  myScs.splice(idx, 1);
+  localStorage.setItem('aiMyScs', JSON.stringify(myScs));
+  renderMySc();
+  document.getElementById('modal').classList.remove('on');
+  showToast('🗑 场景已删除');
+  goback();
+}
+
+function switchStab(t) {
+  document.querySelectorAll('#sceneTab .ti').forEach(x=>x.classList.remove('on'));
+  if (t==='preset') {
+    document.querySelector('#sceneTab .ti:first-child').classList.add('on');
+    document.getElementById('presetSec').style.display = '';
+    document.getElementById('mySec').style.display = 'none';
+  } else {
+    document.querySelector('#sceneTab .ti:last-child').classList.add('on');
+    document.getElementById('presetSec').style.display = 'none';
+    document.getElementById('mySec').style.display = '';
+    renderMySc();
+  }
+}
+
+// GENERATE SCENARIO
+let genData = {};
+
+function resetCreatePage() {
+  genData = {};
+  document.getElementById('gprev').classList.add('in');
+  document.getElementById('gprev').innerHTML = '';
+  document.getElementById('scInput').value = '';
+  document.getElementById('scInput').placeholder = '例如：\n"我想练一个企业主客户，50岁左右，做建材生意的，年营收大概500万..."';
+}
+
+function genSc() {
+  const inp = document.getElementById('scInput').value.trim();
+  if(!inp) {showToast('请输入场景描述');return;}
+  // show loading animation
+  const prev = document.getElementById('gprev');
+  prev.classList.remove('in');
+  prev.innerHTML = `
+    <div style="text-align:center;padding:30px 0;">
+      <div class="spinner"><div class="ring"></div><span style="font-size:14px;color:#666;">AI 正在生成场景...</span></div>
+      <div style="width:100%;height:4px;background:#f0f0f0;border-radius:2px;margin-top:16px;overflow:hidden;"><div id="genProgBar" style="width:0%;height:100%;background:linear-gradient(135deg,#6C63FF,#8B7CFA);border-radius:2px;transition:width .3s;"></div></div>
+      <div style="font-size:11px;color:#999;margin-top:8px;">正在分析您的描述、构建客户画像...</div>
+    </div>`;
+  // animate progress bar
+  let prog = 0;
+  const progTimer = setInterval(()=>{
+    prog += Math.random() * 20;
+    if(prog > 90) prog = 90;
+    const bar = document.getElementById('genProgBar');
+    if(bar) bar.style.width = prog + '%';
+  }, 400);
+  // simulate 3s loading then show result
+  setTimeout(()=>{
+    clearInterval(progTimer);
+    const bar = document.getElementById('genProgBar');
+    if(bar) bar.style.width = '100%';
+    setTimeout(()=>{
+      // generate data based on input keywords
+      const templates = [
+        {kw:'企业主|老板|老板|营收|生意',name:'企业主保障检视',profile:'• 姓名：赵总（AI生成）\n• 年龄：50岁\n• 职业：建材贸易公司老板\n• 性格：直接、不耐烦、精明\n• 已有保障：几份人情单（不详）\n• 隐藏信息：企业+个人账户混用、儿子明年接手、担心税务问题',rules:'• 开场直接问"你觉得我还缺什么"\n• 代理人不够专业 → 3轮内结束\n• 代理人展现专业度 → 认真聊\n• 提到资产隔离 → 非常重视',criteria:'✅ 用企业主视角分析\n✅ 问到经营/负债/接班人\n✅ 提出资产隔离概念\n✅ 发现至少3个缺口\n❌ 禁止用普通工薪思路'},
+        {kw:'宝妈|全职太太|宝宝|小孩|孩子',name:'宝妈保障咨询',profile:'• 姓名：林姐（AI生成）\n• 年龄：32岁\n• 职业：全职太太\n• 家庭：老公年收入30万，宝宝2岁\n• 性格：温柔但谨慎，容易被专业打动\n• 隐藏信息：老公有房贷压力，自己没有社保',rules:'• 开场说"我想给宝宝买保险"\n• 代理人推荐只给宝宝 → 反问"大人不需要吗？"\n• 提到先大人后小孩 → 非常认可\n• 价格超过年缴2万 → 犹豫',criteria:'✅ 坚持"先大人后小孩"原则\n✅ 分析家庭整体保障缺口\n✅ 给出合理预算建议\n✅ 用故事化方式讲风险\n❌ 禁止只推荐少儿险'},
+        {kw:'年轻|刚毕业|90后|00后|月光',name:'年轻人首次投保',profile:'• 姓名：小李（AI生成）\n• 年龄：25岁\n• 职业：互联网公司程序员\n• 月薪：8k，月光族\n• 性格：理性但拖延，觉得保险不急\n• 隐藏信息：体检发现脂肪肝，不知影响投保',rules:'• 开场说"我还年轻，不急吧？"\n• 提到健康风险 → "我身体挺好的"\n• 说保费便宜方案 → 开始认真听\n• 提到核保门槛 → 意识到紧迫性',criteria:'✅ 用"年轻优势"切入（保费低/易通过核保）\n✅ 提供月缴方案降低门槛\n✅ 告知健康隐患对核保的影响\n✅ 不用恐吓式话术\n❌ 禁止推荐年缴超5000的方案'},
+        {kw:'老人|父母|60岁|退休|养老',name:'父母保障规划',profile:'• 姓名：刘阿姨（AI生成）\n• 年龄：58岁\n• 职业：退休教师\n• 性格：节俭但重视健康，信任熟人\n• 隐藏信息：有高血压和轻微糖尿病，曾因健康原因被拒保',rules:'• 开场说"我这个年纪还能买保险吗？"\n• 推荐医疗险 → 问"保费会不会很贵？"\n• 解释核保问题 → 有些紧张\n• 提到防癌险 → 听得认真',criteria:'✅ 选择适合高龄客户的险种（防癌险/医疗险）\n✅ 妥善解释既往症对核保的影响\n✅ 用子女视角（"给父母一份安心"）切入\n✅ 提供体检+核保预审方案\n❌ 禁止推荐重疾险（60岁性价比极低）'}
+      ];
+      let matched = templates.find(t => new RegExp(t.kw).test(inp));
+      if(!matched) matched = templates[0];
+      genData = {name:matched.name + '（自定义）', profile:matched.profile, rules:matched.rules, criteria:matched.criteria};
+      renderGenResult();
+    }, 300);
+  }, 2500);
+}
+
+function renderGenResult() {
+  document.getElementById('gprev').classList.remove('in');
+  document.getElementById('gprev').innerHTML = `
+    <div class="stitle"><span class="ic ic-sm">🤖</span> AI 生成结果</div>
+    <div class="rb"><div class="lb">场景名称</div><div id="genName" style="font-size:16px;font-weight:600;">${escHtml(genData.name)}</div></div>
+    <div class="rb"><div class="lb">客户画像</div><div id="genProfile" style="font-size:13px;line-height:1.8;white-space:pre-wrap;">${escHtml(genData.profile)}</div></div>
+    <div class="rb"><div class="lb">行为规则</div><div id="genRules" style="font-size:13px;line-height:1.8;white-space:pre-wrap;">${escHtml(genData.rules)}</div></div>
+    <div class="rb"><div class="lb">评估标准（AI自动生成）</div><div id="genCriteria" style="font-size:13px;line-height:1.8;white-space:pre-wrap;">${escHtml(genData.criteria)}</div></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn btnp btnw" onclick="saveMySc()"><span class="ic ic-sm ic-green">✅</span> 确认并保存</button>
+      <button class="btn btno btnw" onclick="editGenResult()"><span class="ic ic-sm">✏️</span> 修改</button>
+    </div>`;
+}
+
+function editGenResult() {
+  document.getElementById('gprev').innerHTML = `
+    <div class="stitle"><span class="ic ic-sm">✏️</span> 编辑生成结果</div>
+    <div class="fg"><label>场景名称</label><input id="eName" value="${escHtml(genData.name)}" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:8px;font-size:14px;outline:none;"></div>
+    <div class="fg"><label>客户画像</label><textarea id="eProfile" style="min-height:120px;">${escHtml(genData.profile)}</textarea></div>
+    <div class="fg"><label>行为规则</label><textarea id="eRules" style="min-height:100px;">${escHtml(genData.rules)}</textarea></div>
+    <div class="fg"><label>评估标准</label><textarea id="eCriteria" style="min-height:100px;">${escHtml(genData.criteria)}</textarea></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn btnp btnw" onclick="saveGenEdit()"><span class="ic ic-sm ic-green">✅</span> 保存修改</button>
+      <button class="btn btno btnw" onclick="renderGenResult()"><span class="ic ic-sm">↩️</span> 取消</button>
+    </div>`;
+}
+
+function saveGenEdit() {
+  genData.name = document.getElementById('eName').value.trim() || genData.name;
+  genData.profile = document.getElementById('eProfile').value.trim() || genData.profile;
+  genData.rules = document.getElementById('eRules').value.trim() || genData.rules;
+  genData.criteria = document.getElementById('eCriteria').value.trim() || genData.criteria;
+  renderGenResult();
+}
+
+// TOAST
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+// SAVE MY SCENARIO
+function saveMySc() {
+  // extract clean short description from profile
+  const lines = genData.profile.split('\n').filter(l=>l.trim());
+  const descLines = lines.filter(l=>l.includes('：') || l.includes(':')).map(l=>l.replace(/[•\s]+/g,'').split(/[：:]/)[1] || l.replace(/[•\s]+/g,''));
+  const desc = descLines.slice(0,3).join('，') || genData.name;
+  myScs.push({n:genData.name, d:desc, dt:new Date().toISOString().slice(0,10), c:0, profile:genData.profile, rules:genData.rules, criteria:genData.criteria});
+  localStorage.setItem('aiMyScs', JSON.stringify(myScs));
+  renderMySc();
+  showToast('✅ 已保存到「我的场景」');
+  // clear navStack so back button won't return to create page
+  navStack = [];
+  swtch('home');
+  switchStab('my');
+}
+
+// MORE
+
+
+// PAGE INITS
+function initKB() {
+  const kbData = [
+    {icon:'📖',nm:'产品知识',desc:'重疾险、医疗险、年金险、增额寿等',cards:['重疾险：确诊即赔，保额选50万起步','医疗险：报销型，百万医疗年缴300+','年金险：锁定利率，终身领取','增额终身寿：3%复利增长，灵活取现']},
+    {icon:'🎯',nm:'销售技巧',desc:'SPIN、FABE、促成法等',cards:['SPIN提问法：情况→问题→影响→需求','FABE话术：特征→优势→利益→证据','二选一促成："20年缴还是30年缴？"','假定成交法：默认客户会买，问细节']},
+    {icon:'🚨',nm:'合规红线',desc:'严禁话术和行为规范',cards:['禁止：夸大收益、承诺理赔、对比贬低','禁止：恐吓营销、"不买后悔"、"出事没钱治"','禁止：代签名、隐瞒条款、诱导不如实告知','必须：出示条款、告知犹豫期、签署知情书']},
+    {icon:'💬',nm:'异议话术',desc:'常见异议的标准回应',cards:['"太贵了"→先共情+"日均43元"化整为零','"已有保险"→缺口分析+保单检视','"保险骗人"→数据支撑(获赔率97.6%)','"网上更便宜"→保障对比+服务差异']},
+    {icon:'✅',nm:'促成方法',desc:'从犹豫到签单的关键技巧',cards:['限时促成："这档费率本月截止"','阶梯促成："先配基础保障再逐步加保"','恐惧-希望促成：先讲风险再讲方案','家庭促成："太太也认同的话咱们就定"']},
+    {icon:'🧠',nm:'客户心理',desc:'理解客户决策的心理模型',cards:['损失厌恶：怕亏>想赚，用"失去保障"比"获得收益"更有效','社会认同："像您这样的客户90%都选了这个方案"','锚定效应：先说高保额方案，再推荐适中版','稀缺效应："这个产品月底停售"、"您的年龄核保窗口很窄"']}
+  ];
+  document.getElementById('kmg').innerHTML = kbData.map(k=>`<div class="mi" onclick="showKBDetail('${k.nm}')"><div class="mi-icon">${k.icon}</div><div class="mi-nm">${k.nm}</div><div style="font-size:11px;color:#999;margin-top:2px;">${k.desc}</div></div>`).join('');
+}
+
+function showKBDetail(name) {
+  const kbData = [
+    {icon:'📖',nm:'产品知识',desc:'重疾险、医疗险、年金险、增额寿等',cards:['重疾险：确诊即赔，保额选50万起步','医疗险：报销型，百万医疗年缴300+','年金险：锁定利率，终身领取','增额终身寿：3%复利增长，灵活取现']},
+    {icon:'🎯',nm:'销售技巧',desc:'SPIN、FABE、促成法等',cards:['SPIN提问法：情况→问题→影响→需求','FABE话术：特征→优势→利益→证据','二选一促成："20年缴还是30年缴？"','假定成交法：默认客户会买，问细节']},
+    {icon:'🚨',nm:'合规红线',desc:'严禁话术和行为规范',cards:['禁止：夸大收益、承诺理赔、对比贬低','禁止：恐吓营销、"不买后悔"、"出事没钱治"','禁止：代签名、隐瞒条款、诱导不如实告知','必须：出示条款、告知犹豫期、签署知情书']},
+    {icon:'💬',nm:'异议话术',desc:'常见异议的标准回应',cards:['"太贵了"→先共情+"日均43元"化整为零','"已有保险"→缺口分析+保单检视','"保险骗人"→数据支撑(获赔率97.6%)','"网上更便宜"→保障对比+服务差异']},
+    {icon:'✅',nm:'促成方法',desc:'从犹豫到签单的关键技巧',cards:['限时促成："这档费率本月截止"','阶梯促成："先配基础保障再逐步加保"','恐惧-希望促成：先讲风险再讲方案','家庭促成："太太也认同的话咱们就定"']},
+    {icon:'🧠',nm:'客户心理',desc:'理解客户决策的心理模型',cards:['损失厌恶：怕亏>想赚，用"失去保障"比"获得收益"更有效','社会认同："像您这样的客户90%都选了这个方案"','锚定效应：先说高保额方案，再推荐适中版','稀缺效应："这个产品月底停售"、"您的年龄核保窗口很窄"']}
+  ];
+  const k = kbData.find(x=>x.nm===name);
+  if(!k) return;
+  setTitle(k.nm);
+  let h = `<div class="rb" style="text-align:center;"><div class="lb">${k.icon} ${k.nm}</div><div style="font-size:13px;color:#666;">${k.desc}</div></div>`;
+  k.cards.forEach(c=>{
+    h += `<div class="sc" style="cursor:default;"><div class="nm" style="font-size:13px;">${c}</div></div>`;
+  });
+  h += `<button class="btn btnp btnw" onclick="gotoDetail('S01')" style="margin-top:8px;"><span class="ic ic-sm">🚀</span> 去练习相关场景</button>`;
+  document.getElementById('s1c').innerHTML = h;
+  showPage('s1');
+}
+
+// EXAM SYSTEM - tower ladder (15 levels)
+const examLv=[
+  {sc:'S04',name:'重疾险产品讲解',icon:'📖',diffs:[70,75,80]},
+  {sc:'S12',name:'百万医疗险讲解',icon:'💊',diffs:[70,75,80]},
+  {sc:'S06',name:'缘故客户首次面谈',icon:'🤝',diffs:[70,75,80]},
+  {sc:'S07',name:'转介绍首次接触',icon:'🔗',diffs:[70,75,80]},
+  {sc:'S01',name:'客户说"太贵了"',icon:'🛡️',diffs:[70,75,80]},
+  {sc:'S02',name:'客户说"已有保险"',icon:'📋',diffs:[70,75,80]},
+  {sc:'S05',name:'保险都是骗人的',icon:'⚠️',diffs:[70,75,80]},
+  {sc:'S03',name:'我再想想/和家人商量',icon:'🤔',diffs:[70,75,80]},
+  {sc:'S30',name:'产说会后跟进',icon:'📣',diffs:[70,75,80]},
+  {sc:'S18',name:'第三次面谈促成',icon:'🎯',diffs:[70,75,80]},
+  {sc:'S09',name:'家庭保障需求分析',icon:'📊',diffs:[70,75,80]},
+  {sc:'S11',name:'年金险产品讲解',icon:'💰',diffs:[70,75,80]},
+  {sc:'S27',name:'续保沟通',icon:'🔄',diffs:[70,75,80]},
+  {sc:'S17',name:'"等我有钱了再买"',icon:'💪',diffs:[70,75,80]},
+  {sc:'S32',name:'理赔纠纷处理',icon:'🔥',diffs:[70,75,80]}
+];
+const EXAM_TOTAL = examLv.length;
+const diffNames=['初级','中级','地狱'];
+const diffColors=['easy','mid','hell'];
+const diffIcons=['⭐','⭐⭐','⭐⭐⭐'];
+
+let examProg=JSON.parse(localStorage.getItem('aiExamProg'))||{};
+function saveExamProg(){localStorage.setItem('aiExamProg',JSON.stringify(examProg));}
+function lvStars(lv){return examProg[lv]||0;}
+function totalStars(){let t=0;for(let i=0;i<EXAM_TOTAL;i++)t+=lvStars(i);return t;}
+function lvUnlocked(lv){if(lv===0)return true;return lvStars(lv-1)>=1;}
+function diffUnlocked(lv,d){if(!lvUnlocked(lv))return false;if(d===0)return true;return lvStars(lv)>=d;}
+function currentLevel(){for(let i=0;i<EXAM_TOTAL;i++)if(!lvStars(i))return i;return EXAM_TOTAL-1;}
+
+let _examChal=null;
+
+// leaderboard data (mock)
+const leaderboardData=[
+  {name:'张明',stars:42,levels:15,org:'总公司',branch:'北京分公司',area:'朝阳业务区'},
+  {name:'李芳',stars:35,levels:14,org:'总公司',branch:'北京分公司',area:'海淀业务区'},
+  {name:'王强',stars:28,levels:12,org:'总公司',branch:'上海分公司',area:'浦东业务区'},
+  {name:'赵丽',stars:22,levels:10,org:'总公司',branch:'上海分公司',area:'静安业务区'},
+  {name:'陈刚',stars:18,levels:9,org:'总公司',branch:'深圳分公司',area:'南山业务区'},
+  {name:'刘燕',stars:15,levels:8,org:'总公司',branch:'深圳分公司',area:'福田业务区'},
+  {name:'周伟',stars:12,levels:6,org:'总公司',branch:'北京分公司',area:'朝阳业务区'},
+  {name:'孙婷',stars:10,levels:5,org:'总公司',branch:'上海分公司',area:'浦东业务区'},
+  {name:'吴磊',stars:8,levels:4,org:'总公司',branch:'成都分公司',area:'锦江业务区'},
+  {name:'郑颖',stars:6,levels:3,org:'总公司',branch:'北京分公司',area:'海淀业务区'},
+  {name:'黄涛',stars:5,levels:3,org:'总公司',branch:'成都分公司',area:'武侯业务区'},
+  {name:'林萍',stars:4,levels:2,org:'总公司',branch:'深圳分公司',area:'南山业务区'},
+  {name:'杨帆',stars:3,levels:2,org:'总公司',branch:'上海分公司',area:'静安业务区'},
+  {name:'马超',stars:2,levels:1,org:'总公司',branch:'成都分公司',area:'锦江业务区'},
+  {name:'你',stars:0,levels:0,org:'总公司',branch:'北京分公司',area:'海淀业务区'}
+];
+
+function initExam(){renderTower();}
+
+function scrollToUnfinished(){
+  const scroll=document.querySelector('.tower-scroll');
+  if(!scroll) return;
+  const nodes=document.querySelectorAll('.tower-node');
+  // nodes[0]=level14(top), nodes[14]=level0(bottom) — reversed mapping
+  // find first unlocked level with stars<3, starting from level 0 (bottom)
+  for(let lv=0;lv<EXAM_TOTAL;lv++){
+    if(lvStars(lv)<3 && lvUnlocked(lv)){
+      const node=nodes[EXAM_TOTAL-1-lv]; // reverse mapping
+      if(!node) continue;
+      const nodeTop=node.offsetTop-scroll.offsetTop;
+      const center=nodeTop-scroll.clientHeight/2+node.clientHeight/2;
+      scroll.scrollTop=Math.max(0,center);
+      return;
+    }
+  }
+  scroll.scrollTop=0;
+}
+
+function renderTower(){
+  const ts=totalStars();
+  const cur=currentLevel()+1;
+  const myEntry=leaderboardData.find(x=>x.name==='你');
+  myEntry.stars=ts;
+  myEntry.levels=0;for(let i=0;i<EXAM_TOTAL;i++)if(lvStars(i)>=1)myEntry.levels++;
+  // alternating sides pattern for 15 nodes
+  const sides=[];
+  for(let i=0;i<EXAM_TOTAL;i++) sides.push(i%2===0?'left':'right');
+  let h=`<div class="tower">`;
+  // header fixed outside scroll area - compact layout
+  h+=`<div style="position:relative;z-index:3;padding:8px 14px 4px;flex-shrink:0;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:16px;font-weight:700;">🏆 天梯闯关</div>
+        <div style="font-size:12px;color:#666;margin-top:4px;">关卡 <span style="color:#6C63FF;font-weight:600;">${cur}/${EXAM_TOTAL}</span> · 星级 <span style="color:#faad14;font-weight:600;">${ts}/${EXAM_TOTAL*3}</span></div>
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0;">
+        <span style="flex:1;text-align:center;padding:4px 2px 3px;border-radius:6px;background:#ffe4b5;color:#d48806;cursor:pointer;font-size:10px;font-weight:600;" onclick="showLeaderboard('level')">🏅<br>关卡榜</span>
+        <span style="flex:1;text-align:center;padding:4px 2px 3px;border-radius:6px;background:#dde4ff;color:#6C63FF;cursor:pointer;font-size:10px;font-weight:600;" onclick="showLeaderboard('star')">⭐<br>星级榜</span>
+        <span style="flex:1;text-align:center;padding:4px 2px 3px;border-radius:6px;background:#f6ffed;color:#52c41a;cursor:pointer;font-size:10px;font-weight:600;" onclick="scrollToUnfinished()">🎯<br>未三星</span>
+      </div>
+    </div>
+    <div style="height:4px;background:#e8e8e8;border-radius:2px;margin-top:6px;"><div style="height:100%;width:${Math.round(ts/(EXAM_TOTAL*3)*100)}%;background:linear-gradient(90deg,#6C63FF,#faad14);border-radius:2px;"></div></div>
+  </div>`;
+  // scrollable tower path
+  h+=`<div class="tower-scroll" style="padding-top:10px;">`;
+  for(let i=EXAM_TOTAL-1;i>=0;i--){
+    const lv=examLv[i];
+    const side=sides[i];
+    const stars=lvStars(i);
+    const unlocked=lvUnlocked(i);
+    const allPassed=stars===3;
+    if(i<EXAM_TOTAL-1){
+      const belowLv=i+1;
+      const lineLocked=!lvUnlocked(belowLv);
+      const lineSide=sides[belowLv];
+      h+=`<div class="tower-line ${lineSide}-line ${lineLocked?'locked-line':''}" style="margin-${lineSide==='left'?'left':'right'}:46px;"></div>`;
+    }
+    const badgeClass=allPassed?'passed':unlocked?'current':'locked';
+    const badgeIcon=allPassed?'✅':unlocked?lv.icon:'🔒';
+    const nodeClass=allPassed?'passed':unlocked?'current':'locked';
+    h+=`<div class="tower-node ${side} ${nodeClass}" onclick="${unlocked?`showLvDetail(${i})`:'void(0)'}"><div class="badge ${badgeClass}">${badgeIcon}</div><div class="lv-info"><div class="lv-name ${!unlocked?'locked':''}">第${i+1}关 · ${lv.name}</div><div class="lv-stars">`;
+    for(let d=0;d<3;d++) h+=d<stars?'<span class="lit">⭐</span>':'<span class="dim">☆</span>';
+    h+=`</div></div></div>`;
+  }
+  h+=`<div style="text-align:center;margin-top:6px;font-size:12px;color:#bbb;">—— 起点 ——</div></div></div>`;
+  document.getElementById('exm').innerHTML=h;
+  // scroll to current level position
+  setTimeout(()=>{
+    const scroll=document.querySelector('.tower-scroll');
+    const curNode=document.querySelector('.tower-node.current');
+    if(scroll&&curNode){
+      const nodeTop=curNode.offsetTop-scroll.offsetTop;
+      const center=nodeTop-scroll.clientHeight/2+curNode.clientHeight/2;
+      scroll.scrollTop=Math.max(0,center);
+    }
+  },100);
+}
+
+	let lbIsLevel=false,lbScope={},lbMyOrg='',lbMyBranch='',lbMyArea='';
+	function showLeaderboard(type){
+  lbIsLevel=type==='level';
+  const title=lbIsLevel?'关卡排行榜':'星级排行榜';
+  setTitle(title);
+  const myEntry=leaderboardData.find(x=>x.name==='你');
+  myEntry.stars=totalStars();
+  myEntry.levels=0;for(let i=0;i<EXAM_TOTAL;i++)if(lvStars(i)>=1)myEntry.levels++;
+  lbMyOrg=myEntry.org;lbMyBranch=myEntry.branch;lbMyArea=myEntry.area;
+  lbScope={
+    '总公司':leaderboardData,
+    '分公司':leaderboardData.filter(x=>x.branch===lbMyBranch),
+    '业务区':leaderboardData.filter(x=>x.area===lbMyArea)
+  };
+  renderBoard('业务区');
+}
+function renderBoard(scope){
+  const scopeNames=['总公司','分公司','业务区'];
+  const scopeIcons=['🏢','🏪','📍'];
+  const data=lbScope[scope].sort((a,b)=>lbIsLevel?b.levels-a.levels:b.stars-a.stars);
+    const podium=data.slice(0,3);
+    const rest=data.slice(3);
+    const podiumColors=['linear-gradient(135deg,#fff7e6,#ffe4b5)','linear-gradient(135deg,#f0f5ff,#dde4ff)','linear-gradient(135deg,#f5f5f5,#e8e8e8)'];
+    const podiumBorders=['2px solid #faad14','2px solid #6C63FF','2px solid #bbb'];
+    const podiumMedals=['🥇','🥈','🥉'];
+    const podiumSizes=['56px','48px','44px'];
+    let h=`<div style="padding:14px;">
+      <div class="rb" style="text-align:center;"><div class="lb">${lbIsLevel?'关卡完成数排行 🏅':'星级总数排行 ⭐'}</div></div>
+      <!-- scope tabs -->
+      <div style="display:flex;gap:4px;margin:10px 0;justify-content:center;">`;
+    scopeNames.forEach((s,i)=>{
+      const active=s===scope;
+      h+=`<span style="flex:1;text-align:center;padding:6px 0;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;${active?'background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;':'background:#f5f6fa;color:#666;'}" onclick="renderBoard('${s}')">${scopeIcons[i]} ${s}</span>`;
+    });
+    h+=`</div>
+      <div style="font-size:11px;color:#999;text-align:center;margin-bottom:8px;">当前范围：${scope==='总公司'?lbMyOrg:scope==='分公司'?lbMyBranch:lbMyArea} · ${data.length}人</div>`;
+    if(podium.length>0){
+      h+=`<div style="display:flex;gap:8px;justify-content:center;align-items:flex-end;margin:8px 0 14px;">`;
+      const podiumOrder=[podium[1],podium[0],podium[2]];
+      const podiumIdx=[1,0,2];
+      podiumOrder.forEach((entry,i)=>{
+        if(!entry) return;
+        const isMe=entry.name==='你';
+        h+=`<div style="flex:1;max-width:100px;text-align:center;background:${podiumColors[podiumIdx[i]]};border:${podiumBorders[podiumIdx[i]]};border-radius:12px;padding:${podiumIdx[i]===0?'16px 8px':'10px 8px'};">
+          <div style="font-size:${podiumSizes[podiumIdx[i]]};line-height:1;">${podiumMedals[podiumIdx[i]]}</div>
+          <div style="font-size:13px;font-weight:600;margin-top:4px;${isMe?'color:#6C63FF;':''}">${entry.name}</div>
+          <div style="font-size:20px;font-weight:700;margin-top:2px;${lbIsLevel?'color:#fa8c16;':'color:#faad14;'}">${lbIsLevel?entry.levels:entry.stars}</div>
+          <div style="font-size:10px;color:#999;">${lbIsLevel?'关':'⭐'}</div>
+        </div>`;
+      });
+      h+=`</div>`;
+    }
+    rest.forEach((entry,idx)=>{
+      const rank=idx+4;
+      const isMe=entry.name==='你';
+      const bg=isMe?'background:linear-gradient(135deg,#f0f5ff,#e0e7ff);border:1px solid #6C63FF;':'background:#fff;border:1px solid #f0f0f0;';
+      h+=`<div style="${bg}border-radius:10px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:12px;color:#999;width:20px;text-align:center;">${rank}</span>
+          <span style="font-size:14px;font-weight:500;${isMe?'color:#6C63FF;':''}">${entry.name}</span>${isMe?'<span style="font-size:10px;background:#6C63FF;color:#fff;padding:1px 4px;border-radius:4px;">我</span>':''}
+        </div>
+        <div style="font-size:16px;font-weight:700;${lbIsLevel?'color:#fa8c16;':'color:#faad14;'}">${lbIsLevel?entry.levels:entry.stars}<span style="font-size:11px;color:#999;font-weight:400;">${lbIsLevel?'关':'⭐'}</span></div>
+      </div>`;
+    });
+    h+=`<div style="text-align:center;margin-top:16px;"><button class="btn btno btnw" onclick="renderTower();setTitle('闯关');navStack.length=0;navStack.push('s9');showPage('s9');">返回天梯</button></div></div>`;
+    document.getElementById('exm').innerHTML=h;
+}
+
+function showLvDetail(lv){
+  setTitle(`第${lv+1}关 · ${examLv[lv].name}`);
+  const e=examLv[lv];
+  const stars=lvStars(lv);
+  const s=SC.find(x=>x.id===e.sc);
+  let h=`<div class="lv-detail"><div class="lv-hero"><div class="hero-icon">${e.icon}</div><div class="hero-title">第${lv+1}关 · ${e.name}</div><div style="font-size:12px;color:#999;margin-top:2px;">${s?s.d:''}</div><div class="hero-stars">`;
+  for(let d=0;d<3;d++) h+=d<stars?'<span class="lit">⭐</span>':'<span class="dim">☆</span>';
+  h+=`</div></div>`;
+  for(let d=0;d<3;d++){
+    const passed=stars>=d+1;
+    const unlocked=diffUnlocked(lv,d);
+    const cls=passed?'passed':unlocked?'available':'locked';
+    const th=e.diffs[d];
+    const scoreData=examProg[lv+'_d'+d];
+    h+=`<div class="diff-card ${cls}"><span class="diff-label ${diffColors[d]}">${diffNames[d]}</span><div class="diff-name">${diffIcons[d]} ${e.name}</div><div class="diff-threshold">通过标准：≥${th}分</div>`;
+    if(passed && scoreData) h+=`<div class="diff-score">✅ 已通过 · ${scoreData.score}分</div>`;
+    if(passed && !scoreData) h+=`<div class="diff-score">✅ 已通过</div>`;
+    if(!passed && unlocked) h+=`<span class="diff-btn go" onclick="startExamChal(${lv},${d})">开始挑战</span>`;
+    if(!passed && !unlocked){
+      let reason='';
+      if(!lvUnlocked(lv)) reason=`需先通过第${lv}关`;
+      else if(d>0) reason=`需先通过${diffNames[d-1]}`;
+      h+=`<div class="diff-lock">🔒 ${reason}</div>`;
+    }
+    h+=`</div>`;
+  }
+  h+=`<div style="text-align:center;margin-top:16px;"><button class="btn btno btnw" onclick="renderTower();setTitle('闯关');navStack.length=0;navStack.push('s9');showPage('s9');document.querySelector('.app-header .back').style.display='none';">返回天梯</button></div></div>`;
+  document.getElementById('exm').innerHTML=h;
+}
+
+function startExamChal(lv,d){
+  examMode = true;
+  _examChal = {lv:lv, d:d};
+  _examLv = lv;
+  curDiff = d;
+  const s = SC.find(x=>x.id===examLv[lv].sc);
+  curSc = s || {n:examLv[lv].name, c:'异议处理', id:examLv[lv].sc};
+  // directly start chat, skip detail page
+  reversedMode = false;
+  chatStep = 0;
+  const sk = scripts[curSc.n] || {a:['您好，我是今天跟您沟通的客户。','您说的我有点不太明白。','嗯，我考虑考虑吧。'],c:['✅ 开场自然','⚠️ 可以更通俗','❌ 没有挖掘真实顾虑'],cases:[[],[],[]]};
+  const diffLabel = ['初级','中级','地狱'][d];
+  let h = `<div style="text-align:center;font-size:11px;color:#bbb;padding:4px 0;">${curSc.n} · ${diffLabel}</div>`;
+  h += `<div class="msg ai"><div class="av">🤖</div><div class="bub" style="position:relative;">${sk.a[0]}<span class="spk" onclick="playVoice(event,this)" style="position:absolute;right:6px;top:6px;cursor:pointer;opacity:.5;font-size:12px;line-height:1;">🔊</span></div></div>`;
+  document.getElementById('chatmsgs').innerHTML = h;
+  document.getElementById('chatn').textContent = curSc.n + ' · ' + diffLabel;
+  document.getElementById('chatInput').value = '';
+  document.getElementById('chatInput').placeholder = '输入你的回答...';
+  updateProgress();
+  showPage('s2');
+  setTimeout(()=>{
+    const s2 = document.querySelector('#chatmsgs .msg.ai .spk');
+    if(s2) playVoice(null, s2);
+  }, 400);
+}
+
+function backToExam(){
+  examMode = false;
+  _examChal = null;
+  showLvDetail(_examLv);
+  navStack.length = 0;
+  navStack.push('s9');
+  showPage('s9');
+}
+
+function checkExamResult(score){
+  if(!examMode)return;
+  if(!_examChal)return;
+  const{lv,d}=_examChal;
+  const th=examLv[lv].diffs[d];
+  const curStars=lvStars(lv);
+  if(score>=th && curStars<d+1){
+    examProg[lv]=d+1;
+    examProg[lv+'_d'+d]={score:score};
+    saveExamProg();
+    if(d+1===3) showToast(`🏆 完美通关！${examLv[lv].name} 地狱难度达成！`);
+    else showToast(`🎉 ${diffNames[d]}通过！${examLv[lv].name} 获得${d+1}⭐`);
+    if(lv<4 && curStars===0) showToast(`🔓 第${lv+2}关已解锁！`);
+  } else if(score<th){
+    showToast(`💪 还差${th-score}分！${diffNames[d]}需要≥${th}分`);
+  } else {
+    showToast(`✅ 已获得${curStars}⭐`);
+  }
+  _examChal=null;
+}
+
+function initMe() {
+  // Growth content (我的)
+  document.getElementById('grc').innerHTML = `
+    <div class="rb" style="text-align:center;position:relative;"><span onclick="showTeam()" style="position:absolute;right:0;top:0;font-size:12px;color:#6C63FF;cursor:pointer;padding:4px 8px;border-radius:6px;background:#f0f5ff;line-height:1.4;">👥 团队</span><div class="lb">综合能力分</div><div class="vl">76<span class="u">分</span></div></div>
+    <div class="stitle"><span class="ic">📈</span> 六维能力画像</div>
+    <canvas id="rcg" width="320" height="320" style="margin:0 auto;display:block;max-width:100%;height:auto;"></canvas>
+    <div class="stitle"><span class="ic">📊</span> 成长趋势</div>    <div class="rb">      <div style="display:flex;gap:3px;margin-bottom:6px;"><span class="trend-tab" style="flex:1;text-align:center;padding:4px 0;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:#6C63FF;color:#fff;transition:all .2s;" onclick="drawTrend(-1)">总评分</span></div>      <div style="display:flex;gap:3px;margin-bottom:10px;"><span class="trend-tab" style="flex:1;text-align:center;padding:3px 0;border-radius:6px;font-size:9px;font-weight:600;cursor:pointer;background:#f5f6fa;color:#666;transition:all .2s;" onclick="drawTrend(0)">话术规范</span><span class="trend-tab" style="flex:1;text-align:center;padding:3px 0;border-radius:6px;font-size:9px;font-weight:600;cursor:pointer;background:#f5f6fa;color:#666;transition:all .2s;" onclick="drawTrend(1)">销售逻辑</span><span class="trend-tab" style="flex:1;text-align:center;padding:3px 0;border-radius:6px;font-size:9px;font-weight:600;cursor:pointer;background:#f5f6fa;color:#666;transition:all .2s;" onclick="drawTrend(2)">共情能力</span><span class="trend-tab" style="flex:1;text-align:center;padding:3px 0;border-radius:6px;font-size:9px;font-weight:600;cursor:pointer;background:#f5f6fa;color:#666;transition:all .2s;" onclick="drawTrend(3)">异议处理</span><span class="trend-tab" style="flex:1;text-align:center;padding:3px 0;border-radius:6px;font-size:9px;font-weight:600;cursor:pointer;background:#f5f6fa;color:#666;transition:all .2s;" onclick="drawTrend(4)">促成技巧</span><span class="trend-tab" style="flex:1;text-align:center;padding:3px 0;border-radius:6px;font-size:9px;font-weight:600;cursor:pointer;background:#f5f6fa;color:#666;transition:all .2s;" onclick="drawTrend(5)">合规表现</span></div>      <canvas id="trendLine" width="320" height="180" style="margin:0 auto;display:block;max-width:100%;height:auto;"></canvas>    </div>
+    <div class="stitle"><span class="ic">🏆</span> 推荐练习</div>
+    <div class="sc" onclick="gotoDetail('S06')"><div class="sct"><span class="nm">缘故客户首次面谈</span></div><div class="scd">推荐理由：你的"共情能力"维度偏弱，建议加强练习</div></div>`;
+  // Admin
+  document.getElementById('adc').innerHTML = `
+    <div class="rb"><div class="lb"><span class="ic">📊</span> 团队平均能力画像</div><canvas id="rct" width="320" height="320" style="margin:0 auto;display:block;max-width:100%;height:auto;"></canvas></div>
+    <div class="stitle"><span class="ic">📋</span> 成员列表 <span style="font-size:12px;color:#999;font-weight:400;">点击查看能力图谱+练习记录</span></div>
+    <div class="rb">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:13px;cursor:pointer;" onclick="showMemberDetail('张明')"><div><span style="font-weight:500;">🥇 张明</span><br><span style="font-size:11px;color:#999;">28次 · 平均86分 · 薄弱项：异议处理</span></div><span style="color:#6C63FF;font-size:12px;">查看 →</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:13px;cursor:pointer;" onclick="showMemberDetail('李芳')"><div><span style="font-weight:500;">🥈 李芳</span><br><span style="font-size:11px;color:#999;">22次 · 平均82分 · 薄弱项：促成签单</span></div><span style="color:#6C63FF;font-size:12px;">查看 →</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:13px;cursor:pointer;" onclick="showMemberDetail('王强')"><div><span style="font-weight:500;">🥉 王强</span><br><span style="font-size:11px;color:#999;">19次 · 平均78分 · 薄弱项：获客破冰</span></div><span style="color:#6C63FF;font-size:12px;">查看 →</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:13px;cursor:pointer;" onclick="showMemberDetail('赵丽')"><div><span style="font-weight:500;">📌 赵丽</span><br><span style="font-size:11px;color:#999;">15次 · 平均71分</span></div><span style="color:#6C63FF;font-size:12px;">查看 →</span></div>
+    </div>
+    <div class="stitle"><span class="ic">📤</span> 任务与课程</div>
+    <div class="rb" style="font-size:13px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0;">
+        <span>📌 异议处理专项 · 3人未完成</span>
+        <span style="color:#6C63FF;font-size:12px;cursor:pointer;" onclick="showCourseProgress('异议处理专项')">查看进度</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0;">
+        <span>📌 重疾险产品讲解 · 1人未开始</span>
+        <span style="color:#6C63FF;font-size:12px;cursor:pointer;" onclick="showCourseProgress('重疾险产品讲解')">查看进度</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;">
+        <span>📌 企业主客户演练 · 2人进行中</span>
+        <span style="color:#6C63FF;font-size:12px;cursor:pointer;" onclick="showCourseProgress('企业主客户演练')">查看进度</span>
+      </div>
+    </div>
+  `;
+}
+
+// MEMBER DETAIL (admin view)
+function showMemberDetail(name) {
+  setTitle('成员详情 · ' + name);
+  const scores = [75,68,70,62,65,90]; // 六维分数
+  const total = Math.round(scores.reduce((a,b)=>a+b,0)/6);
+  document.getElementById('rpt').innerHTML = `
+    <div class="rb" style="text-align:center;"><div class="lb">${name} · 综合评分</div><div class="vl" style="font-size:36px;">${total}<span class="u">分</span></div></div>
+    <div class="rb"><div class="lb"><span class="ic ic-sm">📊</span> 能力画像</div><canvas id="rcm" width="320" height="320" style="margin:0 auto;display:block;max-width:100%;height:auto;"></canvas></div>
+    <div class="rb"><div class="lb"><span class="ic ic-sm">📋</span> 练习记录（最近3次）</div>
+      <div style="font-size:13px;padding:8px 0;border-bottom:1px solid #f5f5f5;cursor:pointer;" onclick="viewMemberRecord(1,'${name}')"><span style="color:#6C63FF;">客户说"太贵了"</span> · 78分 · 2026-07-02 <span style="float:right;color:#6C63FF;font-size:12px;">查看 →</span></div>
+      <div style="font-size:13px;padding:8px 0;border-bottom:1px solid #f5f5f5;cursor:pointer;" onclick="viewMemberRecord(6,'${name}')"><span style="color:#6C63FF;">客户说"我已经有保险了"</span> · 72分 · 2026-07-01 <span style="float:right;color:#6C63FF;font-size:12px;">查看 →</span></div>
+      <div style="font-size:13px;padding:8px 0;cursor:pointer;" onclick="viewMemberRecord(8,'${name}')"><span style="color:#6C63FF;">缘故客户首次面谈</span> · 75分 · 2026-06-30 <span style="float:right;color:#6C63FF;font-size:12px;">查看 →</span></div>
+    </div>
+    <div class="stitle"><span class="ic">🎯</span> 薄弱项 → 推荐课程</div>
+    <button class="btn btnp btnw" style="font-size:13px;padding:8px;" onclick="showToast('已推送「异议处理专项」课程给 ${name}')"><span class="ic ic-sm">📤</span> 推送异议处理课程</button>
+    <button class="btn btno btnw" style="font-size:13px;padding:8px;margin-top:6px;" onclick="showToast('已推送「客户共情训练」课程给 ${name}')"><span class="ic ic-sm">📤</span> 推送共情能力课程</button>`;
+  document.getElementById('dpt').innerHTML = '';
+  document.getElementById('rts').style.display = 'none';
+  showPage('s3');
+  setTimeout(()=>drawRadar('rcm',scores),200);
+}
+
+function viewMemberRecord(recordId, memberName) {
+  _memberReturn = memberName;
+  navStack.push('@member');
+  showHistoryDetail(recordId);
+}
+
+// COURSE PROGRESS (admin view)
+
+function showTeam() {
+  setTitle('团队');
+  showPage('s12');
+  setTimeout(()=>drawRadar('rct',[72,70,68,65,67,85]),200);
+}
+
+function showCourseProgress(name) {
+  setTitle('课程进度 · ' + name);
+  document.getElementById('rpt').innerHTML = `
+    <div class="rb"><div class="lb"><span class="ic ic-sm">📊</span> 成员完成进度</div>
+      <div style="font-size:13px;display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f5f5f5;"><span>🥇 张明</span><span style="color:#52c41a;">✅ 已完成（85分）</span></div>
+      <div style="font-size:13px;display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f5f5f5;"><span>🥈 李芳</span><span style="color:#52c41a;">✅ 已完成（72分）</span></div>
+      <div style="font-size:13px;display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f5f5f5;"><span>🥉 王强</span><span style="color:#fa8c16;">🔄 进行中（练习2次）</span></div>
+      <div style="font-size:13px;display:flex;justify-content:space-between;padding:6px 0;"><span>📌 赵丽</span><span style="color:#999;">⏳ 未开始</span></div>
+    </div>`;
+  document.getElementById('dpt').innerHTML = '';
+  document.getElementById('rts').style.display = 'none';
+  showPage('s3');
+}
+
+// FILTERS
+function initFilters() {
+  const fb = document.getElementById('hfb');
+  const fs = ['全部','今天','本周','本月'];
+  fb.innerHTML = fs.map(f => `<span class="fbtn ${f==='全部'?'on':''}" onclick="filterHL('${f}',this)">${f}</span>`).join('') + '<span class="fbtn search-btn" onclick="openSearchHL()">🔍</span>';
+}
+
+function openSearchHL() {
+  document.getElementById('hfb').classList.add('hide');
+  document.getElementById('hsearch').classList.add('on');
+  document.getElementById('hsearchInput').focus();
+}
+
+function closeSearchHL() {
+  document.getElementById('hfb').classList.remove('hide');
+  document.getElementById('hsearch').classList.remove('on');
+  document.getElementById('hsearchInput').value = '';
+  // restore to "全部" filter
+  document.querySelectorAll('#hfb .fbtn').forEach(x=>x.classList.remove('on'));
+  document.querySelector('#hfb .fbtn:first-child').classList.add('on');
+  renderHL('全部');
+}
+
+function searchHL() {
+  const kw = document.getElementById('hsearchInput').value.trim().toLowerCase();
+  if(!kw) { renderHL('全部'); return; }
+  let h = '';
+  const sceneCounts = {};
+  hdata.forEach(d => { sceneCounts[d.sc] = (sceneCounts[d.sc]||0) + 1; });
+  const multiScenes = Object.entries(sceneCounts).filter(([_,c])=>c>=2).sort((a,b)=>b[1]-a[1]);
+  // aggregation cards that match keyword
+  const matchedMulti = multiScenes.filter(([scId])=>{
+    const s = SC.find(x=>x.id===scId);
+    const name = s ? s.n.toLowerCase() : '';
+    return scId.toLowerCase().includes(kw) || name.includes(kw);
+  });
+  if(matchedMulti.length > 0) {
+    matchedMulti.forEach(([scId, count])=>{
+      const s = SC.find(x=>x.id===scId);
+      const records = hdata.filter(d=>d.sc===scId).sort((a,b)=>a.dt.localeCompare(b.dt));
+      const first=records[0].sc2, last=records[records.length-1].sc2;
+      const diff=last-first;
+      const trendColor=diff>=0?'#52c41a':'#ff4d4f';
+      const trendIcon=diff>=0?'↑':'↓';
+      h += `<div class="ag" onclick="showAgg('${scId}')"><div class="agt"><span class="ic ic-sm">📈</span> ${s?s.n:scId} <span class="scnum">${count}次</span></div><div style="display:flex;align-items:center;gap:4px;margin-top:6px;font-size:12px;color:#999;">${records.map((r,i)=>{
+        const color = r.sc2>=80?'#52c41a':r.sc2>=65?'#fa8c16':'#ff4d4f';
+        return `<span style="color:${color};font-weight:600;">${r.sc2}</span>`;
+      }).join('<span style="color:#ccc;">→</span>')}</div></div>`;
+    });
+  }
+  // individual records that match keyword
+  hdata.forEach(d=>{
+    const s=SC.find(x=>x.id===d.sc);
+    const name = s?s.n:'';
+    const searchable = `${d.sc} ${name} ${d.sc2}分 ${d.lv} ${d.dt} ${d.tm} ${d.rd}轮`.toLowerCase();
+    if(!searchable.includes(kw)) return;
+    const cl=d.sc2>=80?'#52c41a':d.sc2>=65?'#fa8c16':'#ff4d4f';
+    h += `<div class="sc" onclick="showHistoryDetail(${d.id})"><div class="sct"><span class="nm">${d.sc} ${name}</span><span style="font-weight:700;color:${cl};font-size:18px;">${d.sc2}</span></div><div style="display:flex;gap:8px;font-size:11px;color:#999;margin-top:2px;"><span>${d.dt}</span><span>${d.lv}</span><span>${d.tm}</span><span>${d.rd}轮</span></div></div>`;
+  });
+  if(!h) h = '<div class="empty-state"><div class="empty-icon">🔍</div><div>没有找到相关记录</div><div style="font-size:12px;margin-top:4px;">试试其他关键词</div></div>';
+  document.getElementById('hl').innerHTML = h;
+}
+
+// UTILITY
+function escHtml(s) {return s.replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// INIT
+renderSL();
+renderMySc();
+initFilters();
+initKB();
+initExam();
+initMe();
+setTimeout(()=>{
+  const c = document.getElementById('rcg');
+  if(c) drawRadar('rcg',[78,65,70,62,68,90]);
+  drawTrend(-1);
+},200);
+</script>
+</body>
+</html>

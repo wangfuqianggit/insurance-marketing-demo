@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 陪练 · MVP 概念</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;}
+body{background:#f5f6fa;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px;}
+.phone{width:390px;height:844px;background:#fff;border-radius:36px;box-shadow:0 10px 40px rgba(0,0,0,.12);overflow:hidden;display:flex;flex-direction:column;position:relative;}
+.status-bar{height:40px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:11px;color:#333;flex-shrink:0;}
+.top-bar{height:48px;display:flex;align-items:center;padding:0 16px;gap:8px;flex-shrink:0;border-bottom:1px solid #f5f5f5;}
+.top-bar .tb-back{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:#333;background:#f5f6fa;transition:.15s;flex-shrink:0;}
+.top-bar .tb-back:active{background:#e8e8e8;}
+.top-bar .tb-title{font-size:16px;font-weight:600;color:#1a1a1a;flex:1;}
+.scroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
+.scroll::-webkit-scrollbar{display:none;}
+
+/* Home - Chat style */
+.home-top{padding:20px 20px 4px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.home-top .ht-av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#6C63FF,#8B7CFA);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;}
+.home-top .ht-info{flex:1;}
+.home-top .ht-info .ht-name{font-size:17px;font-weight:700;color:#1a1a1a;}
+.home-top .ht-info .ht-sub{font-size:12px;color:#999;}
+.home-top .ht-menu{font-size:20px;color:#999;cursor:pointer;padding:4px;}
+
+/* suggestion chips */
+.sugs{display:flex;gap:6px;padding:8px 20px 4px;overflow-x:auto;flex-shrink:0;}
+.sugs::-webkit-scrollbar{display:none;}
+.sugs .chip{padding:6px 14px;border-radius:16px;font-size:12px;white-space:nowrap;cursor:pointer;border:1px solid #eee;background:#fff;color:#666;flex-shrink:0;transition:.15s;}
+.sugs .chip:active{background:#f0f2ff;border-color:#6C63FF;color:#6C63FF;}
+
+.msgs{padding:8px 20px 12px;display:flex;flex-direction:column;gap:10px;flex:1;}
+.msg{max-width:92%;display:flex;gap:8px;}
+.msg.ai{align-self:flex-start;}
+.msg.user{align-self:flex-end;flex-direction:row-reverse;}
+.msg .av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.msg.ai .av{background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:#6C63FF;}
+.msg.user .av{background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;font-size:12px;}
+.msg .bub{padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.6;}
+.msg.ai .bub{background:#f5f6fa;border-top-left-radius:4px;color:#333;}
+.msg.user .bub{background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;border-top-right-radius:4px;}
+.msg .bub .card{background:#fff;border-radius:10px;padding:12px;margin-top:8px;border:1px solid #eee;cursor:pointer;transition:.15s;}
+.msg .bub .card:active{transform:scale(.98);border-color:#6C63FF;}
+.msg .bub .card .c-title{font-weight:600;font-size:14px;color:#1a1a1a;}
+.msg .bub .card .c-sub{font-size:12px;color:#999;margin-top:2px;}
+.msg .bub .card .c-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;background:#f0f2ff;color:#6C63FF;margin-top:6px;}
+.msg .bub .card .c-btn{margin-top:8px;padding:6px 16px;border-radius:8px;background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;font-size:13px;display:inline-block;font-weight:500;}
+
+/* result card inline */
+.msg .bub .result-mini{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-radius:10px;padding:12px;margin-top:6px;border:1px solid #bbf7d0;}
+.msg .bub .result-mini .rm-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;}
+.msg .bub .result-mini .rm-row .rm-up{color:#52c41a;font-weight:600;}
+.msg .bub .result-mini .rm-row .rm-down{color:#fa8c16;}
+
+.chat-input{display:flex;gap:8px;padding:10px 16px 14px;border-top:1px solid #f5f5f5;align-items:center;flex-shrink:0;}
+.chat-input input{flex:1;padding:10px 16px;border-radius:24px;border:1px solid #e8e8e8;font-size:14px;outline:none;background:#f5f6fa;}
+.chat-input input:focus{border-color:#6C63FF;background:#fff;}
+.chat-input .ci-btn{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;flex-shrink:0;transition:.15s;background:#f5f6fa;color:#999;}
+.chat-input .ci-send{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;flex-shrink:0;background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;}
+
+/* Scenario select */
+.sc-list{padding:12px 20px;}
+.sc-list .sc-item{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;margin-bottom:6px;cursor:pointer;transition:.15s;background:#fff;border:1px solid #f0f0f0;}
+.sc-list .sc-item:active{background:#f8f9ff;border-color:#6C63FF;}
+.sc-list .sc-item .sc-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;background:#f0f2ff;flex-shrink:0;}
+.sc-list .sc-item .sc-c{flex:1;}
+.sc-list .sc-item .sc-c .sc-n{font-size:14px;font-weight:500;color:#1a1a1a;}
+.sc-list .sc-item .sc-c .sc-d{font-size:12px;color:#999;margin-top:1px;}
+.sc-list .sc-item .sc-arrow{color:#ccc;font-size:16px;}
+.sc-list .sc-custom{border:2px dashed #ddd;justify-content:center;gap:8px;color:#999;font-size:14px;}
+.sc-list .sc-custom:active{border-color:#6C63FF;color:#6C63FF;}
+
+/* Custom scenario form */
+.form{padding:16px 20px;}
+.form .fg{margin-bottom:14px;}
+.form .fg label{font-size:13px;font-weight:500;color:#333;display:block;margin-bottom:4px;}
+.form .fg textarea{width:100%;padding:10px 12px;border:1px solid #e8e8e8;border-radius:10px;font-size:14px;outline:none;resize:none;height:80px;font-family:inherit;background:#fafafa;}
+.form .fg textarea:focus{border-color:#6C63FF;background:#fff;}
+.form .fg .hint{font-size:11px;color:#bbb;margin-top:4px;}
+.btnp{display:block;width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;font-size:15px;font-weight:600;border:none;cursor:pointer;transition:.15s;text-align:center;}
+.btnp:active{opacity:.85;}
+.btno{display:block;width:100%;padding:12px;border-radius:10px;background:#fff;color:#6C63FF;font-size:15px;font-weight:600;border:1px solid #6C63FF;cursor:pointer;transition:.15s;text-align:center;}
+
+/* Chat practice */
+.chat-practice{flex:1;display:flex;flex-direction:column;}
+.chat-practice .cp-header{padding:10px 16px;background:#fff;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.chat-practice .cp-header .cp-title{font-size:14px;font-weight:500;color:#1a1a1a;}
+.chat-practice .cp-header .cp-end{padding:5px 14px;border-radius:16px;border:1px solid #eee;font-size:12px;color:#999;cursor:pointer;background:#fff;}
+.chat-practice .cp-msgs{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px;}
+.chat-practice .cp-msgs::-webkit-scrollbar{display:none;}
+.chat-practice .cp-input{display:flex;gap:8px;padding:10px 16px 14px;border-top:1px solid #f0f0f0;align-items:center;flex-shrink:0;}
+.chat-practice .cp-input input{flex:1;padding:10px 16px;border-radius:24px;border:1px solid #e8e8e8;font-size:14px;outline:none;background:#f5f6fa;}
+.chat-practice .cp-input input:focus{border-color:#6C63FF;background:#fff;}
+
+/* Result page */
+.result{padding:20px;text-align:center;}
+.result .r-score{font-size:48px;font-weight:700;color:#1a1a1a;}
+.result .r-score .r-unit{font-size:18px;color:#999;font-weight:400;}
+.result .r-compare{font-size:13px;color:#52c41a;margin:4px 0 16px;background:#f0fdf4;display:inline-block;padding:3px 12px;border-radius:12px;}
+.result .r-dims{padding:0;text-align:left;}
+.result .r-dim{margin-bottom:10px;}
+.result .r-dim .rd-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px;}
+.result .r-dim .rd-top .rd-n{color:#333;font-weight:500;}
+.result .r-dim .rd-top .rd-v{font-weight:600;}
+.result .r-dim .rd-bar{height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;position:relative;}
+.result .r-dim .rd-bar .fl{height:100%;border-radius:3px;transition:1s;}
+.result .r-dim .rd-bar .fl-prev{position:absolute;top:0;left:0;height:100%;background:linear-gradient(90deg,#e0e7ff,#d0d5ff);opacity:.5;}
+.result .r-actions{display:flex;gap:10px;margin-top:24px;}
+
+/* Dashboard */
+.dash{padding:20px;}
+.dash .d-hero{background:linear-gradient(135deg,#6C63FF,#8B7CFA);border-radius:16px;padding:20px;color:#fff;margin-bottom:16px;}
+.dash .d-hero .d-h1{font-size:13px;opacity:.85;}
+.dash .d-hero .d-h2{font-size:28px;font-weight:700;margin:2px 0 4px;}
+.dash .d-hero .d-h3{font-size:13px;opacity:.7;}
+.dash .d-section{margin-bottom:16px;}
+.dash .d-section .ds-title{font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:8px;}
+.dash .d-dim{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.dash .d-dim .dd-n{width:60px;font-size:12px;color:#666;flex-shrink:0;}
+.dash .d-dim .dd-b{flex:1;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;position:relative;}
+.dash .d-dim .dd-b .fl{height:100%;border-radius:3px;}
+.dash .d-dim .dd-v{width:30px;text-align:right;font-size:12px;font-weight:600;color:#1a1a1a;}
+.dash .d-dim .dd-chg{font-size:10px;font-weight:400;display:block;}
+.dash .d-dim .dd-chg.up{color:#52c41a;}
+.dash .d-dim .dd-chg.down{color:#ff4d4f;}
+.dash .d-card{background:#fff;border:1px solid #f0f0f0;border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;transition:.15s;}
+.dash .d-card:active{border-color:#6C63FF;}
+.dash .d-card .dc-t{display:flex;justify-content:space-between;font-size:13px;}
+.dash .d-card .dc-t .dc-n{font-weight:500;color:#1a1a1a;}
+.dash .d-card .dc-t .dc-s{color:#6C63FF;font-weight:600;}
+.dash .d-card .dc-d{font-size:12px;color:#999;margin-top:1px;}
+.dash .d-card .dc-bar{height:3px;background:#f0f0f0;border-radius:2px;margin-top:6px;overflow:hidden;}
+.dash .d-card .dc-bar .dc-f{height:100%;background:linear-gradient(90deg,#6C63FF,#8B7CFA);border-radius:2px;}
+
+.bottom-nav{display:flex;padding:6px 0 12px;border-top:1px solid #f5f5f5;background:#fff;flex-shrink:0;}
+.bottom-nav .nav-item{flex:1;text-align:center;font-size:10px;color:#999;cursor:pointer;padding:2px 0;}
+.bottom-nav .nav-item .nav-icon{font-size:20px;margin-bottom:1px;}
+.bottom-nav .nav-item.active{color:#6C63FF;}
+
+/* overlays */
+.overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:50;display:none;align-items:center;justify-content:center;}
+.overlay.on{display:flex;}
+.overlay .obox{background:#fff;border-radius:16px;padding:24px;width:300px;text-align:center;}
+.overlay .obox h3{font-size:16px;margin-bottom:6px;}
+.overlay .obox p{font-size:13px;color:#999;margin-bottom:16px;}
+.overlay .obox .obtns{display:flex;gap:10px;}
+.overlay .obox .obtns .btn{flex:1;padding:10px;border-radius:10px;font-size:14px;font-weight:500;border:none;cursor:pointer;}
+.overlay .obox .obtns .btn.sec{background:#f5f6fa;color:#666;}
+.overlay .obox .obtns .btn.prim{background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;}
+
+.pages{display:none;flex-direction:column;height:100%;}
+.pages.on{display:flex;}
+</style>
+</head>
+<body>
+
+<div class="phone" id="app">
+  <!-- ===== HOME ===== -->
+  <div class="pages on" id="page-home">
+    <div class="status-bar"><span>09:41</span><span>📶 🔋</span></div>
+    <div class="scroll">
+      <div class="home-top">
+        <div class="ht-av">🤖</div>
+        <div class="ht-info">
+          <div class="ht-name">AI 教练</div>
+          <div class="ht-sub">已连续练习 6 天 · 能力 +8%</div>
+        </div>
+        <div class="ht-menu" onclick="showDash()">📊</div>
+      </div>
+      <div class="sugs">
+        <span class="chip" onclick="showScenes()">🎯 开始练习</span>
+        <span class="chip" onclick="showDash()">📈 看能力变化</span>
+        <span class="chip" onclick="customScene()">✏️ 自定义场景</span>
+      </div>
+      <div class="msgs" id="homeMsgs">
+        <div class="msg ai">
+          <div class="av">🤖</div>
+          <div class="bub">
+            早上好！今天状态怎么样？<br><br>
+            上次你练了"客户说太贵了"，猜猜发生了什么？
+          </div>
+        </div>
+        <div class="msg user">
+          <div class="av">👤</div>
+          <div class="bub">练得还行？</div>
+        </div>
+        <div class="msg ai">
+          <div class="av">🤖</div>
+          <div class="bub">
+            不是"还行"，是实打实的进步😎
+            <div class="result-mini">
+              <div class="rm-row"><span>异议处理</span><span>54 → <span class="rm-up">68</span> ↑14</span></div>
+              <div class="rm-row"><span>共情能力</span><span>60 → <span class="rm-up">65</span> ↑5</span></div>
+              <div class="rm-row" style="color:#999;">促成技巧<span>62 → <span class="rm-down">60</span> ↓2</span></div>
+            </div>
+            <div style="margin-top:6px;">练了 3 次，两个维度明显提升👍</div>
+          </div>
+        </div>
+        <div class="msg ai">
+          <div class="av">🤖</div>
+          <div class="bub">
+            今天想练什么？
+            <div class="card" onclick="showScenes()">
+              <div class="c-title">🎯 从场景库选一个</div>
+              <div class="c-sub">10 个核心场景 + 自定义</div>
+              <div class="c-tag">推荐：异议处理</div>
+            </div>
+            <div class="card" onclick="customScene()" style="margin-top:6px;">
+              <div class="c-title">✏️ 自定义场景</div>
+              <div class="c-sub">模拟即将见面的客户，提前预演</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="chat-input">
+      <input id="homeInput" type="text" placeholder="说你想练什么..." onkeydown="if(event.key==='Enter')homeSend()" />
+      <span class="ci-btn">🎤</span>
+      <span class="ci-send" onclick="homeSend()">↑</span>
+    </div>
+  </div>
+
+  <!-- ===== SCENARIO SELECT ===== -->
+  <div class="pages" id="page-scenes">
+    <div class="top-bar">
+      <span class="tb-back" onclick="backHome()">‹</span>
+      <span class="tb-title">选择练习场景</span>
+    </div>
+    <div class="scroll">
+      <div class="sc-list">
+        <div class="sc-item" onclick="startPractice('客户说太贵了')">
+          <div class="sc-icon" style="background:#fff1f0;">💰</div>
+          <div class="sc-c"><div class="sc-n">客户说"太贵了"</div><div class="sc-d">异议处理 · 价值重塑</div></div>
+          <span class="sc-arrow">›</span>
+        </div>
+        <div class="sc-item" onclick="startPractice('客户说我已经有保险了')">
+          <div class="sc-icon" style="background:#fff7e6;">🛡️</div>
+          <div class="sc-c"><div class="sc-n">客户说"我已经有保险了"</div><div class="sc-d">异议处理 · 缺口分析</div></div>
+          <span class="sc-arrow">›</span>
+        </div>
+        <div class="sc-item" onclick="startPractice('客户说再想想')">
+          <div class="sc-icon" style="background:#f0f5ff;">🤔</div>
+          <div class="sc-c"><div class="sc-n">客户说"我再想想"</div><div class="sc-d">促成签单 · 挖掘真实顾虑</div></div>
+          <span class="sc-arrow">›</span>
+        </div>
+        <div class="sc-item" onclick="startPractice('重疾险讲解')">
+          <div class="sc-icon" style="background:#f0fdf4;">🏥</div>
+          <div class="sc-c"><div class="sc-n">重疾险产品讲解</div><div class="sc-d">产品讲解 · 通俗讲清核心</div></div>
+          <span class="sc-arrow">›</span>
+        </div>
+        <div class="sc-item" onclick="startPractice('保险都是骗人的')">
+          <div class="sc-icon" style="background:#fff0f6;">🔥</div>
+          <div class="sc-c"><div class="sc-n">客户说"保险都是骗人的"</div><div class="sc-d">异议处理 · 信任重建</div></div>
+          <span class="sc-arrow">›</span>
+        </div>
+        <div class="sc-item" onclick="startPractice('转介绍接触')">
+          <div class="sc-icon" style="background:#f0f5ff;">🤝</div>
+          <div class="sc-c"><div class="sc-n">转介绍首次接触</div><div class="sc-d">获客破冰 · 自然切入</div></div>
+          <span class="sc-arrow">›</span>
+        </div>
+        <div class="sc-item sc-custom" onclick="customScene()">
+          <span style="font-size:18px;">✏️</span> 自定义场景 · AI 帮你生成
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CUSTOM SCENE ===== -->
+  <div class="pages" id="page-custom">
+    <div class="top-bar">
+      <span class="tb-back" onclick="showScenes()">‹</span>
+      <span class="tb-title">自定义场景</span>
+    </div>
+    <div class="scroll">
+      <div class="form">
+        <div class="fg">
+          <label>描述你要练习的客户</label>
+          <textarea id="customInput" placeholder='例如：&#10;一个企业主客户，50岁，做建材生意的，年营收500万左右，之前买的都是人情单，现在想认真看看保障够不够。性格比较直接，会问很多专业问题。'>一个企业主客户，50岁，做建材生意的，年营收500万左右，之前买的都是人情单，现在想认真看看保障够不够。</textarea>
+          <div class="hint">描述越详细，AI 生成的客户越真实</div>
+        </div>
+        <button class="btnp" onclick="doCustomGen()">🤖 AI 生成场景并开始练习</button>
+        <div id="customPreview" style="margin-top:14px;display:none;background:#f8f9ff;border-radius:12px;padding:14px;font-size:13px;line-height:1.6;">
+          <div style="font-weight:600;margin-bottom:6px;">📋 已生成客户画像</div>
+          <div id="customPreviewText"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PRACTICE ===== -->
+  <div class="pages" id="page-practice">
+    <div class="chat-practice">
+      <div class="cp-header">
+        <div class="cp-title" id="practiceTitle">🎙️ 对练中</div>
+        <span class="cp-end" onclick="showEndConfirm()">结束</span>
+      </div>
+      <div class="cp-msgs" id="practiceMsgs">
+        <div class="msg ai">
+          <div class="av">🤖</div>
+          <div class="bub">你好张姐，上次聊的方案您考虑得怎么样了？</div>
+        </div>
+      </div>
+      <div class="cp-input">
+        <input id="practiceInput" type="text" placeholder="输入你的回答..." onkeydown="if(event.key==='Enter')practiceSend()" />
+        <span class="ci-btn">🎤</span>
+        <span class="ci-send" onclick="practiceSend()">↑</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== RESULT ===== -->
+  <div class="pages" id="page-result">
+    <div class="top-bar">
+      <span class="tb-back" onclick="backHome()">‹</span>
+      <span class="tb-title">练习结果</span>
+    </div>
+    <div class="scroll result" id="resultContent">
+      <div style="margin-bottom:4px;font-size:13px;color:#999;">综合评分</div>
+      <div class="r-score">71<span class="r-unit">分</span></div>
+      <div class="r-compare">↑ 上次 62 分 · 进步 9 分</div>
+
+      <div class="r-dims" style="margin-top:8px;">
+        <div class="r-dim">
+          <div class="rd-top"><span class="rd-n">话术规范</span><span class="rd-v" style="color:#52c41a;">82</span></div>
+          <div class="rd-bar"><div class="fl" style="width:82%;background:#52c41a;"></div></div>
+        </div>
+        <div class="r-dim">
+          <div class="rd-top"><span class="rd-n">异议处理</span><span class="rd-v" style="color:#52c41a;">68 <span style="font-size:11px;font-weight:400;">↑14</span></span></div>
+          <div class="rd-bar"><div class="fl" style="width:68%;background:#52c41a;"></div><div class="fl-prev" style="width:54%;"></div></div>
+        </div>
+        <div class="r-dim">
+          <div class="rd-top"><span class="rd-n">共情能力</span><span class="rd-v" style="color:#fa8c16;">65</span></div>
+          <div class="rd-bar"><div class="fl" style="width:65%;background:#fa8c16;"></div></div>
+        </div>
+        <div class="r-dim">
+          <div class="rd-top"><span class="rd-n">促成技巧</span><span class="rd-v" style="color:#ff4d4f;">60</span></div>
+          <div class="rd-bar"><div class="fl" style="width:60%;background:#ff4d4f;"></div></div>
+        </div>
+        <div class="r-dim">
+          <div class="rd-top"><span class="rd-n">合规表现</span><span class="rd-v" style="color:#52c41a;">90</span></div>
+          <div class="rd-bar"><div class="fl" style="width:90%;background:#52c41a;"></div></div>
+        </div>
+      </div>
+
+      <div style="background:#fff7ed;border-radius:12px;padding:14px;margin-top:16px;text-align:left;">
+        <div style="font-weight:600;font-size:13px;color:#d46b08;margin-bottom:4px;">💡 改进建议</div>
+        <div style="font-size:13px;color:#333;line-height:1.6;">
+          异议处理进步明显！客户说贵的时候你学会了先共情再讲价值。<br><br>
+          <span style="color:#fa8c16;">⚠️ 促成技巧略有下降</span>——"还有什么顾虑"给了客户犹豫空间，建议试试二选一法："您是选20年缴还是30年缴？"
+        </div>
+      </div>
+
+      <div style="background:#f0fdf4;border-radius:12px;padding:14px;margin-top:10px;text-align:left;">
+        <div style="font-weight:600;font-size:13px;color:#16a34a;margin-bottom:4px;">💯 满分示范</div>
+        <div style="font-size:13px;color:#333;line-height:1.6;">
+          "张姐，我特别理解您觉得贵的心情。不过50万保额摊到一天才43块钱，一杯咖啡的钱换来50万的保障，您觉得这样是不是更划算？"
+        </div>
+      </div>
+
+      <div class="r-actions">
+        <button class="btno" onclick="startPractice('客户说太贵了')" style="font-size:13px;">🔄 再练一次</button>
+        <button class="btnp" onclick="showDash()" style="font-size:13px;">📈 看能力变化</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DASHBOARD ===== -->
+  <div class="pages" id="page-dash">
+    <div class="top-bar">
+      <span class="tb-back" onclick="backHome()">‹</span>
+      <span class="tb-title">能力看板</span>
+    </div>
+    <div class="scroll">
+      <div class="dash">
+        <div class="d-hero">
+          <div class="d-h1">📈 本周进步</div>
+          <div class="d-h2">+8%</div>
+          <div class="d-h3">12 次练习 · 综合能力 71 分</div>
+        </div>
+        <div class="d-section">
+          <div class="ds-title">📊 各维度变化</div>
+          <div class="d-dim"><span class="dd-n">话术规范</span><div class="dd-b"><div class="fl" style="width:82%;background:#52c41a;"></div></div><span class="dd-v">82<span class="dd-chg up">↑3</span></span></div>
+          <div class="d-dim"><span class="dd-n">异议处理</span><div class="dd-b"><div class="fl" style="width:68%;background:#52c41a;"></div></div><span class="dd-v">68<span class="dd-chg up">↑14</span></span></div>
+          <div class="d-dim"><span class="dd-n">共情能力</span><div class="dd-b"><div class="fl" style="width:65%;background:#fa8c16;"></div></div><span class="dd-v">65<span class="dd-chg up">↑5</span></span></div>
+          <div class="d-dim"><span class="dd-n">促成技巧</span><div class="dd-b"><div class="fl" style="width:60%;background:#ff4d4f;"></div></div><span class="dd-v">60<span class="dd-chg down">↓2</span></span></div>
+          <div class="d-dim"><span class="dd-n">合规表现</span><div class="dd-b"><div class="fl" style="width:90%;background:#52c41a;"></div></div><span class="dd-v">90<span class="dd-chg up">↑2</span></span></div>
+        </div>
+        <div class="d-section">
+          <div class="ds-title">🎯 推荐练习</div>
+          <div class="d-card" onclick="startPractice('别家比你们便宜')">
+            <div class="dc-t"><span class="dc-n">客户说"别家比你们便宜"</span><span class="dc-s">短板</span></div>
+            <div class="dc-d">异议处理 · 上次 55 分，练 2 次可突破</div>
+            <div class="dc-bar"><div class="dc-f" style="width:55%;"></div></div>
+          </div>
+          <div class="d-card" onclick="startPractice('第三次面谈促成')">
+            <div class="dc-t"><span class="dc-n">第三次面谈促成</span><span class="dc-s" style="color:#fa8c16;">待强化</span></div>
+            <div class="dc-d">促成签单 · 你的促成技巧近期下降，建议加强</div>
+            <div class="dc-bar"><div class="dc-f" style="width:30%;"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== END CONFIRM ===== -->
+  <div class="overlay" id="endOverlay">
+    <div class="obox">
+      <h3>结束对练</h3>
+      <p>系统将自动生成评估报告</p>
+      <div class="obtns">
+        <button class="btn sec" onclick="closeEndConfirm()">继续练习</button>
+        <button class="btn prim" onclick="confirmEnd()">结束并查看结果</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let step = 0;
+const demoReply = [
+  "张姐，您说的有道理，不过我们这款产品保障内容确实不一样，我帮您分析分析差异在哪里。",
+  "您看，我们的轻症豁免是自带的责任，确诊轻症后面保费不用交了。",
+  "而且我身边一个客户跟您情况很像，也是觉得贵，后来选了30年缴，一个月才800多。"
+];
+
+function hideAll(){document.querySelectorAll('.pages').forEach(p=>p.classList.remove('on'));}
+function show(p){hideAll();document.getElementById(p).classList.add('on');}
+
+function backHome(){show('page-home');}
+function showScenes(){show('page-scenes');}
+function customScene(){show('page-custom');window.customPreview.style.display='none';}
+
+function homeSend(){
+  const v=document.getElementById('homeInput').value.trim();
+  if(!v)return;
+  const msgs=document.getElementById('homeMsgs');
+  msgs.innerHTML+=`<div class="msg user"><div class="av">👤</div><div class="bub">${v}</div></div>`;
+  document.getElementById('homeInput').value='';
+  if(v.includes('练')||v.includes('开始')){
+    setTimeout(()=>showScenes(),300);
+  }else if(v.includes('能力')||v.includes('看')){
+    setTimeout(()=>showDash(),300);
+  }else{
+    setTimeout(()=>{
+      msgs.innerHTML+=`<div class="msg ai"><div class="av">🤖</div><div class="bub">好的，你想练哪个场景？<div class="card" onclick="showScenes()" style="margin-top:6px;"><div class="c-title">🎯 去选场景</div></div></div></div>`;
+      msgs.scrollTop=msgs.scrollHeight;
+    },500);
+  }
+}
+
+function doCustomGen(){
+  const v=document.getElementById('customInput').value.trim();
+  if(!v)return;
+  const preview=document.getElementById('customPreview');
+  const text=document.getElementById('customPreviewText');
+  text.innerHTML=`<b>客户画像：</b>${v.substring(0,60)}...<br><br>🎯 <b>练习目标：</b>需求分析 → 挖掘风险缺口 → 引导保障方案<br><br>⏱ <b>预计 6-8 轮对话</b>`;
+  preview.style.display='block';
+  setTimeout(()=>{
+    document.getElementById('customPreview').innerHTML+=`<div style="margin-top:10px;"><button class="btnp" onclick="startPractice('自定义')" style="font-size:13px;">🎙️ 开始练习</button></div>`;
+  },300);
+}
+
+function startPractice(name){
+  document.getElementById('practiceTitle').textContent='🎙️ 对练中 · '+name;
+  const msgs=document.getElementById('practiceMsgs');
+  msgs.innerHTML=`<div class="msg ai"><div class="av">🤖</div><div class="bub">你好张姐，上次聊的方案您考虑得怎么样了？</div></div>`;
+  step=0;
+  show('page-practice');
+  document.getElementById('practiceInput').focus();
+}
+
+function practiceSend(){
+  const v=document.getElementById('practiceInput').value.trim();
+  if(!v)return;
+  const msgs=document.getElementById('practiceMsgs');
+  msgs.innerHTML+=`<div class="msg user"><div class="av">👤</div><div class="bub">${v}</div></div>`;
+  document.getElementById('practiceInput').value='';
+  if(step<demoReply.length){
+    setTimeout(()=>{
+      msgs.innerHTML+=`<div class="msg ai"><div class="av">🤖</div><div class="bub">${demoReply[step]}</div></div>`;
+      msgs.scrollTop=msgs.scrollHeight;
+      step++;
+    },600);
+  }else{
+    setTimeout(()=>{
+      msgs.innerHTML+=`<div class="msg ai"><div class="av">🤖</div><div class="bub">好的，本轮对练结束！我来生成评估报告...</div></div>`;
+      msgs.scrollTop=msgs.scrollHeight;
+      setTimeout(()=>show('page-result'),800);
+    },600);
+  }
+}
+
+function showEndConfirm(){document.getElementById('endOverlay').classList.add('on');}
+function closeEndConfirm(){document.getElementById('endOverlay').classList.remove('on');}
+function confirmEnd(){document.getElementById('endOverlay').classList.remove('on');show('page-result');}
+
+function showDash(){show('page-dash');}
+</script>
+</body>
+</html>

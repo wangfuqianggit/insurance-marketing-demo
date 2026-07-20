@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 陪练 v2</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;}
+body{background:#f5f6fa;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px;}
+.phone{width:390px;height:844px;background:#fff;border-radius:36px;box-shadow:0 8px 40px rgba(0,0,0,.1);overflow:hidden;display:flex;flex-direction:column;position:relative;}
+
+/* Status bar */
+.status-bar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:11px;color:#1a1a1a;flex-shrink:0;font-weight:600;}
+
+/* Top nav */
+.top-nav{height:48px;display:flex;align-items:center;padding:0 12px;flex-shrink:0;}
+.top-nav .tn-left{cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:18px;color:#1a1a1a;user-select:none;}
+.top-nav .tn-left:active{background:#f0f0f0;}
+.top-nav .tn-center{flex:1;text-align:center;font-size:16px;font-weight:600;}
+.top-nav .tn-right{cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:18px;color:#1a1a1a;user-select:none;}
+.top-nav .tn-right:active{background:#f0f0f0;}
+
+.scroll{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;}
+.scroll::-webkit-scrollbar{display:none;}
+
+/* Date tag */
+.date-tag{text-align:center;font-size:12px;color:#999;padding:8px 20px 4px;}
+
+/* Topic suggestions - vertical like 豆包 */
+.sug-list{padding:0 16px 8px;flex-shrink:0;}
+.sug-item{padding:10px 14px;border-radius:12px;cursor:pointer;border:1px solid #eee;transition:.1s;margin-bottom:8px;}
+.sug-item:active{background:#f5f5f5;}
+.sug-item .si-title{font-size:15px;color:#1a1a1a;}
+.sug-item .si-desc{font-size:12px;color:#999;margin-top:1px;}
+
+/* Chat welcome */
+.msg-wrap{padding:0 16px;margin-top:4px;}
+.msg{max-width:88%;display:flex;gap:8px;margin-bottom:10px;}
+.msg.ai{align-self:flex-start;}
+.msg.user{align-self:flex-end;flex-direction:row-reverse;}
+.msg .av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;margin-top:4px;}
+.msg.ai .av{background:linear-gradient(135deg,#f0f2ff,#e0e4ff);}
+.msg.user .av{background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;font-size:13px;}
+.msg .bub{padding:10px 16px;border-radius:20px;font-size:15px;line-height:1.6;}
+.msg.ai .bub{background:#f0f2f5;color:#1a1a1a;border-bottom-left-radius:4px;}
+.msg.user .bub{background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;border-bottom-right-radius:4px;}
+
+/* Card in chat */
+.card-wrap{margin-top:6px;}
+.card{background:#fff;border-radius:16px;padding:14px;border:1px solid #f0f0f0;box-shadow:0 1px 4px rgba(0,0,0,.03);cursor:pointer;transition:.1s;margin-bottom:8px;}
+.card:active{transform:scale(.97);}
+.card .c-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:8px;}
+.card .c-title{font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:2px;}
+.card .c-desc{font-size:13px;color:#999;line-height:1.5;}
+.card .c-tag{display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;color:#6C63FF;background:#f0f2ff;margin-top:6px;}
+
+/* Result snippet */
+.rsnip{background:#f0fdf4;border-radius:12px;padding:12px;border:1px solid #dcfce7;margin-top:6px;}
+.rsnip .rs-title{font-size:13px;font-weight:600;color:#16a34a;margin-bottom:6px;}
+.rsnip .rs-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;border-bottom:1px solid #dcfce7;}
+.rsnip .rs-row:last-child{border-bottom:none;}
+.rsnip .rs-up{color:#52c41a;font-weight:600;}
+.rsnip .rs-down{color:#fa8c16;}
+
+/* Quick actions row */
+.qacts{display:flex;gap:8px;padding:0 16px;overflow-x:auto;flex-shrink:0;margin-bottom:8px;}
+.qacts::-webkit-scrollbar{display:none;}
+.qacts .qa{padding:7px 16px;border-radius:18px;font-size:13px;white-space:nowrap;cursor:pointer;background:#f0f2ff;color:#6C63FF;border:1px solid #e0e4ff;flex-shrink:0;user-select:none;transition:.1s;}
+.qacts .qa:active{background:#e0e4ff;}
+
+/* Input bar */
+.input-bar{display:flex;align-items:center;padding:8px 12px 12px;gap:8px;flex-shrink:0;border-top:1px solid #f0f0f0;}
+.input-bar .ibox{flex:1;display:flex;align-items:center;background:#f5f6fa;border-radius:24px;padding:0 4px 0 16px;border:1px solid transparent;transition:.1s;}
+.input-bar .ibox:focus-within{border-color:#6C63FF;background:#fff;}
+.input-bar .ibox input{flex:1;padding:10px 0;border:none;outline:none;font-size:15px;background:transparent;}
+.input-bar .ibox .ibtn{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:#999;flex-shrink:0;user-select:none;}
+.input-bar .ibox .ibtn:active{background:#e8e8e8;}
+.input-bar .isend{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;flex-shrink:0;background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;user-select:none;}
+
+/* Scene list */
+.sl{padding:8px 16px;}
+.sl-item{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #f5f5f5;cursor:pointer;transition:.1s;}
+.sl-item:active{opacity:.6;}
+.sl-item .si{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.sl-item .sc{flex:1;}
+.sl-item .sc .sn{font-size:15px;font-weight:500;}
+.sl-item .sc .sd{font-size:13px;color:#999;margin-top:1px;}
+.custom-btn{text-align:center;padding:14px;color:#6C63FF;font-size:14px;font-weight:500;cursor:pointer;background:#f8f9ff;border-radius:12px;margin-top:10px;user-select:none;}
+.custom-btn:active{background:#f0f2ff;}
+
+/* Form */
+.form{padding:16px 20px;}
+.form .fg{margin-bottom:16px;}
+.form .fg label{font-size:14px;font-weight:500;color:#1a1a1a;display:block;margin-bottom:6px;}
+.form .fg textarea{width:100%;padding:12px;border-radius:12px;border:1px solid #e8e8e8;font-size:15px;outline:none;resize:none;height:90px;font-family:inherit;background:#fafafa;transition:.1s;}
+.form .fg textarea:focus{border-color:#6C63FF;background:#fff;}
+.form .fg .hint{font-size:12px;color:#bbb;margin-top:4px;}
+.btnp{display:block;width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;font-size:15px;font-weight:600;border:none;cursor:pointer;transition:.1s;text-align:center;user-select:none;}
+.btnp:active{opacity:.8;}
+.preview{background:#f8f9ff;border-radius:14px;padding:16px;margin-top:14px;font-size:14px;line-height:1.7;display:none;}
+
+/* Practice */
+.prac-header{padding:10px 16px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;border-bottom:1px solid #f0f0f0;}
+.prac-header .ph-title{font-size:15px;font-weight:500;}
+.prac-header .ph-end{padding:5px 16px;border-radius:16px;border:1px solid #e8e8e8;font-size:13px;color:#999;cursor:pointer;background:#fff;user-select:none;}
+.prac-header .ph-end:active{background:#f5f5f5;}
+.prac-chat{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;}
+.prac-chat::-webkit-scrollbar{display:none;}
+
+/* Page system */
+.page{display:none;flex-direction:column;flex:1;min-height:0;}
+.page.on{display:flex;}
+
+/* Overlay */
+.overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.35);z-index:50;display:none;align-items:center;justify-content:center;}
+.overlay.on{display:flex;}
+.obox{background:#fff;border-radius:20px;padding:24px;width:280px;text-align:center;}
+.obox h3{font-size:17px;margin-bottom:4px;}
+.obox p{font-size:13px;color:#999;margin-bottom:16px;}
+.obox .obtns{display:flex;gap:10px;}
+.obox .obtns .obtn{flex:1;padding:11px;border-radius:12px;font-size:14px;font-weight:500;border:none;cursor:pointer;user-select:none;}
+.obox .obtns .obtn.sec{background:#f5f6fa;color:#333;}
+.obox .obtns .obtn.prim{background:#6C63FF;color:#fff;}
+
+/* Result */
+.rp{padding:20px;text-align:center;}
+.rp .rs{font-size:44px;font-weight:700;}
+.rp .rs .rsu{font-size:16px;color:#999;font-weight:400;}
+.rp .rsc{font-size:14px;color:#52c41a;margin:4px 0 20px;background:#f0fdf4;display:inline-block;padding:4px 14px;border-radius:16px;}
+.rp .rd{text-align:left;padding:0;}
+.rp .rdi{margin-bottom:12px;}
+.rp .rdi .rdt{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px;}
+.rp .rdi .rdt .rdn{color:#333;font-weight:500;}
+.rp .rdi .rdb{height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;position:relative;}
+.rp .rdi .rdb .fl{height:100%;border-radius:3px;}
+.rp .rdi .rdb .prev{position:absolute;top:0;left:0;height:100%;background:linear-gradient(90deg,#e0e7ff,#d0d5ff);opacity:.4;}
+.rbox{padding:14px;border-radius:12px;margin-top:12px;text-align:left;}
+.rbox .rbt{font-size:13px;font-weight:600;margin-bottom:4px;}
+.rbox .rbb{font-size:14px;line-height:1.6;color:#333;}
+.racts{display:flex;gap:10px;margin-top:20px;}
+.racts .ra{flex:1;padding:12px;border-radius:12px;font-size:14px;font-weight:600;text-align:center;cursor:pointer;user-select:none;}
+.racts .ra.pri{background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;}
+.racts .ra.sec{background:#f5f6fa;color:#333;}
+.racts .ra:active{opacity:.8;}
+
+/* Dash */
+.dash{padding:16px;}
+.dash .dh{background:linear-gradient(135deg,#6C63FF,#8B7CFA);border-radius:16px;padding:20px;color:#fff;margin-bottom:16px;}
+.dash .dh .d1{font-size:13px;opacity:.85;}
+.dash .dh .d2{font-size:26px;font-weight:700;margin:2px 0 2px;}
+.dash .dh .d3{font-size:13px;opacity:.7;}
+.dash .dst{font-size:16px;font-weight:600;color:#1a1a1a;margin:14px 0 8px;}
+.dash .dr{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.dash .dr .dn{width:60px;font-size:13px;color:#666;flex-shrink:0;}
+.dash .dr .db{flex:1;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;}
+.dash .dr .db .fl{height:100%;border-radius:3px;}
+.dash .dr .dv{width:40px;text-align:right;font-size:13px;font-weight:600;}
+.dash .dr .dc{font-size:10px;font-weight:400;display:block;}
+.dash .dr .dc.u{color:#52c41a;}
+.dash .dr .dc.d{color:#ff4d4f;}
+.dash .dc{background:#fff;border:1px solid #f0f0f0;border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;transition:.1s;}
+.dash .dc:active{border-color:#6C63FF;}
+.dash .dc .dct{display:flex;justify-content:space-between;font-size:14px;}
+.dash .dc .dct .dcn{font-weight:500;color:#1a1a1a;}
+.dash .dc .dct .dcs{color:#6C63FF;}
+.dash .dc .dcd{font-size:13px;color:#999;margin-top:1px;}
+.dash .dc .dcb{height:3px;background:#f0f0f0;border-radius:2px;margin-top:6px;overflow:hidden;}
+.dash .dc .dcb .dcf{height:100%;background:linear-gradient(90deg,#6C63FF,#8B7CFA);border-radius:2px;}
+
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+.fade{animation:fi .2s ease;}
+
+/* Toggle */
+/* Radio toggle */
+
+
+.tb{padding:4px 14px;border-radius:14px;font-size:12px;cursor:pointer;background:#f0f0f0;color:#999;transition:.1s;user-select:none;}
+.tb.on{background:#6C63FF;color:#fff;}
+
+/* Drawer - 豆包 style */
+.drawer-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.35);z-index:55;display:none;}
+.drawer-overlay.on{display:block;}
+.drawer{position:absolute;top:0;left:-344px;bottom:0;width:344px;background:#fff;z-index:56;transition:left .25s ease;display:flex;flex-direction:column;box-shadow:4px 0 20px rgba(0,0,0,.1);}
+.drawer.on{left:0;}
+
+/* Drawer search bar */
+.dr-search-wrap{padding:52px 12px 8px;flex-shrink:0;display:flex;gap:8px;align-items:center;}
+.dr-search-wrap .dr-sr{flex:1;display:flex;align-items:center;background:#eee;border-radius:20px;padding:0 12px;gap:4px;}
+.dr-search-wrap .dr-sr input{flex:1;padding:8px 0;border:none;outline:none;font-size:14px;background:transparent;}
+.dr-search-wrap .dr-sr .sr-icon{color:#999;font-size:14px;}
+.dr-search-wrap .dr-new{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:#6C63FF;flex-shrink:0;background:#f0f2ff;}
+.dr-search-wrap .dr-new:active{background:#e0e4ff;}
+
+/* Drawer functions - vertical */
+.dr-funcs{padding:0 0 4px 16px;border-bottom:1px solid #f0f0f0;flex-shrink:0;}
+.dr-funcs .df{display:block;padding:9px 0;font-size:15px;font-weight:600;cursor:pointer;color:#333;transition:.1s;}
+.dr-funcs .df:active{opacity:.5;}
+
+/* Drawer records - single line */
+.dr-records{flex:1;overflow-y:auto;padding:0 16px 12px;}
+.dr-records::-webkit-scrollbar{display:none;}
+.dr-item{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid #f5f5f5;cursor:pointer;transition:.1s;}
+.dr-item:active{opacity:.5;}
+.dr-item .dri-scene{font-size:13px;font-weight:400;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+.dr-item .dri-right{display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:8px;font-size:13px;color:#999;}
+.dr-item .dri-right .dri-score{color:#333;}
+.dr-item .dri-right .dri-chg{font-size:11px;}
+.dr-item .dri-right .dri-chg.up{color:#52c41a;}
+.dr-item .dri-right .dri-chg.down{color:#fa8c16;}
+.dr-item .dri-right .dri-date{font-size:11px;color:#ccc;margin-left:2px;}
+</style>
+</head>
+<body>
+
+<div class="app-wrap">
+<div style="display:flex;gap:8px;justify-content:center;margin:0 0 8px;">
+  <span class="tb" id="tNewBtn" onclick="setFT(1)">🆕 首次使用</span>
+  <span class="tb on" id="tOldBtn" onclick="setFT(0)">🔁 已有记录</span>
+</div>
+
+<div class="phone" id="app">
+  <!-- ===== DRAWER ===== -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+  <div class="drawer" id="drawer">
+    <div class="dr-search-wrap">
+      <div class="dr-sr">
+        <span class="sr-icon">🔍</span>
+        <input id="drawerSearch" type="text" placeholder="搜索对练记录" oninput="searchDrawer()" />
+      </div>
+      <span class="dr-new" onclick="closeDrawer();goPage('psc')">✏️</span>
+    </div>
+    <div class="dr-funcs">
+      <span class="df" onclick="closeDrawer();goPage('psc')">🎯 场景库</span>
+      <span class="df" onclick="closeDrawer();goPage('pcu')">✏️ 自定义</span>
+      <span class="df" onclick="closeDrawer();goPage('pd')">📊 能力看板</span>
+    </div>
+    <div class="dr-records" id="drawerList"></div>
+  </div>
+
+  <!-- ===== HOME ===== -->
+  <div class="page on" id="ph">
+    <div class="status-bar"><span>9:41</span><span>📶 🔋 100%</span></div>
+    <div class="top-nav">
+      <span class="tn-left" id="menuBtn" onclick="openDrawer()">☰</span>
+      <span class="tn-center">AI 教练</span>
+      <span class="tn-right"></span>
+    </div>
+    <div class="scroll" id="homeScroll">
+
+      <div class="date-tag">7月10日 周四</div>
+
+      <div id="homeReturn">
+        <div class="msg-wrap" style="padding:0 20px;">
+          <div style="font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:2px;">早上好 👋</div>
+          <div style="font-size:14px;color:#666;margin-bottom:12px;">你已连续练习 6 天</div>
+        </div>
+
+        <div class="msg-wrap">
+          <div class="msg ai">
+            <div class="bub">
+              上次你练了"客户说太贵了"，来看看进步👇
+            <div class="rsnip">
+              <div class="rs-title">📈 进步报告</div>
+              <div class="rs-row"><span>异议处理</span><span>54 → <span class="rs-up">68</span> ↑14</span></div>
+              <div class="rs-row"><span>共情能力</span><span>60 → <span class="rs-up">65</span> ↑5</span></div>
+              <div class="rs-row"><span>促成技巧</span><span style="color:#999;">62 → <span class="rs-down">60</span> ↓2</span></div>
+            </div>
+            <div style="margin-top:6px;">练了 3 次，两个维度明显提升！今天继续吗？</div>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <div id="homeFirst" style="display:none;">
+        <div style="text-align:center;padding:36px 20px 16px;">
+          <div style="font-size:40px;margin-bottom:10px;">🎯</div>
+          <div style="font-size:20px;font-weight:700;color:#1a1a1a;margin-bottom:6px;">欢迎使用 AI 教练</div>
+          <div style="font-size:14px;color:#999;line-height:1.6;">和 AI 模拟真实的客户对话<br>每一次练习都能看到进步</div>
+        </div>
+      </div>
+
+      <div style="text-align:center;font-size:13px;color:#bbb;padding:10px 0 8px;letter-spacing:0.5px;">接下来练什么</div>
+
+      <div class="sug-list">
+        <div class="sug-item" onclick="goPractice('客户说太贵了')">
+          <div class="si-title">客户说"太贵了"</div>
+          <div class="si-desc">异议处理 · 上次 68 分，持续进步中</div>
+        </div>
+        <div class="sug-item" onclick="goPractice('客户说已经有保险了')">
+          <div class="si-title">客户说"我已经有保险了"</div>
+          <div class="si-desc">需求挖掘 · 帮客户发现保障缺口</div>
+        </div>
+        <div class="sug-item" onclick="goPractice('重疾险讲解')">
+          <div class="si-title">重疾险产品讲解</div>
+          <div class="si-desc">产品介绍 · 用大白话讲清核心卖点</div>
+        </div>
+        <div class="sug-item" onclick="goPractice('转介绍接触')">
+          <div class="si-title">转介绍首次接触</div>
+          <div class="si-desc">获客破冰 · 自然切入建立信任</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="input-bar">
+      <div class="ibox">
+        <input id="chatInput" type="text" placeholder="说你想练什么..." onkeydown="if(event.key==='Enter')homeSend()" />
+        <span class="ibtn">🎤</span>
+      </div>
+      <span class="isend" onclick="homeSend()">↑</span>
+    </div>
+  </div>
+
+  <!-- ===== SCENES ===== -->
+  <div class="page" id="psc">
+    <div class="status-bar"><span>9:41</span><span>📶 🔋 100%</span></div>
+    <div class="top-nav">
+      <span class="tn-left" onclick="backHome()">‹</span>
+      <span class="tn-center">选择场景</span>
+      <span class="tn-right"></span>
+    </div>
+    <div class="scroll">
+      <div class="sl">
+        <div class="sl-item" onclick="goPractice('客户说太贵了')">
+          <div class="si" style="background:#fff1f0;">💰</div>
+          <div class="sc"><div class="sn">客户说"太贵了"</div><div class="sd">异议处理 · 价值重塑</div></div>
+        </div>
+        <div class="sl-item" onclick="goPractice('客户说已经有保险了')">
+          <div class="si" style="background:#fff7e6;">🛡️</div>
+          <div class="sc"><div class="sn">客户说"我已经有保险了"</div><div class="sd">异议处理 · 缺口分析</div></div>
+        </div>
+        <div class="sl-item" onclick="goPractice('客户说再想想')">
+          <div class="si" style="background:#f0f5ff;">🤔</div>
+          <div class="sc"><div class="sn">客户说"我再想想"</div><div class="sd">促成签单 · 挖掘真实顾虑</div></div>
+        </div>
+        <div class="sl-item" onclick="goPractice('重疾险讲解')">
+          <div class="si" style="background:#f0fdf4;">🏥</div>
+          <div class="sc"><div class="sn">重疾险产品讲解</div><div class="sd">产品讲解 · 通俗讲清核心</div></div>
+        </div>
+        <div class="sl-item" onclick="goPractice('保险都是骗人的')">
+          <div class="si" style="background:#fff0f6;">🔥</div>
+          <div class="sc"><div class="sn">客户说"保险都是骗人的"</div><div class="sd">异议处理 · 信任重建</div></div>
+        </div>
+        <div class="sl-item" onclick="goPractice('转介绍接触')">
+          <div class="si" style="background:#e8f4f8;">🤝</div>
+          <div class="sc"><div class="sn">转介绍首次接触</div><div class="sd">获客破冰 · 自然切入</div></div>
+        </div>
+        <div class="custom-btn" onclick="goPage('pcu')">✏️ 自定义场景 · AI 帮你生成</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CUSTOM ===== -->
+  <div class="page" id="pcu">
+    <div class="status-bar"><span>9:41</span><span>📶 🔋 100%</span></div>
+    <div class="top-nav">
+      <span class="tn-left" onclick="backToScenes()">‹</span>
+      <span class="tn-center">自定义场景</span>
+      <span class="tn-right"></span>
+    </div>
+    <div class="scroll">
+      <div class="form">
+        <div class="fg">
+          <label>描述你要练习的客户</label>
+          <textarea id="cu" placeholder='例如：一个企业主，50岁，做建材生意，年营收500万，之前买的都是人情单，现在想认真看看保障够不够。性格直接。'>一个企业主客户，50岁，做建材生意的，年营收500万左右，之前买的都是人情单，现在想认真看看保障够不够。</textarea>
+          <div class="hint">描述越详细，AI 生成的客户越真实</div>
+        </div>
+        <button class="btnp" onclick="genCust()">🤖 AI 生成并开始练习</button>
+        <div class="preview" id="pv">
+          <div style="font-weight:600;margin-bottom:4px;">📋 客户画像</div>
+          <span id="pvBody"></span>
+          <button class="btnp" style="margin-top:12px;font-size:14px;" onclick="goPractice('自定义场景')">🎙️ 开始练习</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PRACTICE ===== -->
+  <div class="page" id="pp">
+    <div class="status-bar"><span>9:41</span><span>📶 🔋 100%</span></div>
+    <div class="prac-header">
+      <span style="display:flex;align-items:center;gap:6px;font-size:15px;font-weight:600;">
+        <span style="width:8px;height:8px;border-radius:50%;background:#52c41a;display:inline-block;"></span>
+        <span id="pracTitle">对练中</span>
+      </span>
+      <span class="ph-end" onclick="showEnd()">结束</span>
+    </div>
+    <div class="prac-chat" id="pracChat">
+      <div class="msg ai fade" style="max-width:92%;display:flex;gap:8px;margin-bottom:10px;">
+        <div class="av" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;margin-top:4px;background:linear-gradient(135deg,#f0f2ff,#e0e4ff);">🤖</div>
+        <div class="bub" style="padding:10px 16px;border-radius:20px;font-size:15px;line-height:1.6;background:#f0f2f5;color:#1a1a1a;border-bottom-left-radius:4px;">你好张姐，上次聊的方案您考虑得怎么样了？</div>
+      </div>
+    </div>
+    <div class="input-bar" style="border-top:1px solid #f0f0f0;">
+      <div class="ibox">
+        <input id="pracInput" type="text" placeholder="输入你的回答..." onkeydown="if(event.key==='Enter')pracSend()" />
+        <span class="ibtn">🎤</span>
+      </div>
+      <span class="isend" onclick="pracSend()">↑</span>
+    </div>
+  </div>
+
+  <!-- ===== RESULT ===== -->
+  <div class="page" id="pr">
+    <div class="status-bar"><span>9:41</span><span>📶 🔋 100%</span></div>
+    <div class="top-nav">
+      <span class="tn-left" onclick="backHome()">‹</span>
+      <span class="tn-center">练习结果</span>
+      <span class="tn-right"></span>
+    </div>
+    <div class="scroll rp">
+      <div style="font-size:13px;color:#999;margin-bottom:2px;">综合评分</div>
+      <div class="rs">71<span class="rsu">分</span></div>
+      <div class="rsc">↑ 上次 62 分 · 进步 9 分</div>
+      <div class="rd">
+        <div class="rdi"><div class="rdt"><span class="rdn">话术规范</span><span style="font-weight:600;color:#52c41a;">82</span></div><div class="rdb"><div class="fl" style="width:82%;background:#52c41a;"></div></div></div>
+        <div class="rdi"><div class="rdt"><span class="rdn">异议处理</span><span style="font-weight:600;color:#52c41a;">68 <span style="font-size:12px;font-weight:400;">↑14</span></span></div><div class="rdb"><div class="fl" style="width:68%;background:#52c41a;"></div><div class="prev" style="width:54%;"></div></div></div>
+        <div class="rdi"><div class="rdt"><span class="rdn">共情能力</span><span style="font-weight:600;color:#fa8c16;">65</span></div><div class="rdb"><div class="fl" style="width:65%;background:#fa8c16;"></div></div></div>
+        <div class="rdi"><div class="rdt"><span class="rdn">促成技巧</span><span style="font-weight:600;color:#ff4d4f;">60</span></div><div class="rdb"><div class="fl" style="width:60%;background:#ff4d4f;"></div></div></div>
+        <div class="rdi"><div class="rdt"><span class="rdn">合规表现</span><span style="font-weight:600;color:#52c41a;">90</span></div><div class="rdb"><div class="fl" style="width:90%;background:#52c41a;"></div></div></div>
+      </div>
+      <div class="rbox" style="background:#fff7ed;">
+        <div class="rbt" style="color:#d46b08;">💡 改进建议</div>
+        <div class="rbb">异议处理进步明显！客户说贵的时候你学会了先共情再讲价值。<br><br><span style="color:#fa8c16;">促成技巧略有下降</span>——别问"还有什么顾虑"，试试二选一法："您是选20年缴还是30年缴？"</div>
+      </div>
+      <div class="rbox" style="background:#f0fdf4;">
+        <div class="rbt" style="color:#16a34a;">💯 满分示范</div>
+        <div class="rbb">"张姐，我特别理解您觉得贵的心情。不过50万保额摊到一天才43块钱，一杯咖啡的钱换来50万的保障，您觉得划算不？"</div>
+      </div>
+      <div class="racts">
+        <span class="ra sec" onclick="retryPrac()">🔄 再练一次</span>
+        <span class="ra pri" onclick="goPage('pd')">📈 看能力变化</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DASHBOARD ===== -->
+  <div class="page" id="pd">
+    <div class="status-bar"><span>9:41</span><span>📶 🔋 100%</span></div>
+    <div class="top-nav">
+      <span class="tn-left" onclick="backHome()">‹</span>
+      <span class="tn-center">能力看板</span>
+      <span class="tn-right"></span>
+    </div>
+    <div class="scroll">
+      <div class="dash">
+        <div class="dh">
+          <div class="d1">📈 本周进步</div>
+          <div class="d2">+8%</div>
+          <div class="d3">12 次练习 · 综合能力 71 分</div>
+        </div>
+        <div class="dst">📊 各维度变化</div>
+        <div class="dr"><span class="dn">话术规范</span><div class="db"><div class="fl" style="width:82%;background:#52c41a;"></div></div><span class="dv">82<span class="dc u">↑3</span></span></div>
+        <div class="dr"><span class="dn">异议处理</span><div class="db"><div class="fl" style="width:68%;background:#52c41a;"></div></div><span class="dv">68<span class="dc u">↑14</span></span></div>
+        <div class="dr"><span class="dn">共情能力</span><div class="db"><div class="fl" style="width:65%;background:#fa8c16;"></div></div><span class="dv">65<span class="dc u">↑5</span></span></div>
+        <div class="dr"><span class="dn">促成技巧</span><div class="db"><div class="fl" style="width:60%;background:#ff4d4f;"></div></div><span class="dv">60<span class="dc d">↓2</span></span></div>
+        <div class="dr"><span class="dn">合规表现</span><div class="db"><div class="fl" style="width:90%;background:#52c41a;"></div></div><span class="dv">90<span class="dc u">↑2</span></span></div>
+        <div class="dst">🎯 推荐练习</div>
+        <div class="dc" onclick="goPractice('别家比你们便宜')">
+          <div class="dct"><span class="dcn">客户说"别家比你们便宜"</span><span class="dcs">短板</span></div>
+          <div class="dcd">异议处理 · 上次 55 分，练 2 次可突破</div>
+          <div class="dcb"><div class="dcf" style="width:55%;"></div></div>
+        </div>
+        <div class="dc" onclick="goPractice('第三次面谈促成')">
+          <div class="dct"><span class="dcn">第三次面谈促成</span><span class="dcs" style="color:#fa8c16;">待强化</span></div>
+          <div class="dcd">促成签单 · 你的促成技巧近期下降</div>
+          <div class="dcb"><div class="dcf" style="width:30%;"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== END OVERLAY ===== -->
+  <div class="overlay" id="eo">
+    <div class="obox">
+      <h3>结束对练</h3>
+      <p>系统会自动生成评估报告</p>
+      <div class="obtns">
+        <button class="obtn sec" onclick="clEnd()">继续练习</button>
+        <button class="obtn prim" onclick="cfEnd()">结束并查看</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let st=0;
+const reps=[
+  "张姐，您说的有道理，不过我们这款产品保障内容确实不一样，我帮您分析分析差异在哪里。",
+  "您看，轻症豁免是自带的责任，确诊轻症后面保费不用交了。",
+  "我身边一个客户跟您情况很像，也是觉得贵，后来选了30年缴，一个月才800多。"
+];
+
+function goPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));document.getElementById(id).classList.add('on');if(id==='pp')document.getElementById('pracInput').focus();}
+function backHome(){goPage('ph');closeDrawer();}
+function backToScenes(){goPage('psc');}
+
+function setFT(v){
+  document.getElementById('tNewBtn').className=v?'tb on':'tb';
+  document.getElementById('tOldBtn').className=v?'tb':'tb on';
+  document.getElementById('homeReturn').style.display=v?'none':'block';
+  document.getElementById('homeFirst').style.display=v?'block':'none';
+  closeDrawer();
+}
+
+// History data
+var historyData=[
+  {date:'7月10日 周四',scene:'客户说"太贵了"',score:71,chg:'+9',chgType:'up',tags:['异议处理'],time:'10:32'},
+  {date:'7月9日 周三',scene:'客户说"太贵了"',score:65,chg:'+3',chgType:'up',tags:['异议处理'],time:'15:18'},
+  {date:'7月9日 周三',scene:'重疾险产品讲解',score:78,chg:'+5',chgType:'up',tags:['产品讲解'],time:'10:05'},
+  {date:'7月8日 周二',scene:'客户说"太贵了"',score:62,chg:'-2',chgType:'down',tags:['异议处理'],time:'20:41'},
+  {date:'7月8日 周二',scene:'保险都是骗人的',score:55,chg:'+8',chgType:'up',tags:['信任重建'],time:'14:22'},
+  {date:'7月7日 周一',scene:'转介绍首次接触',score:70,chg:'NEW',chgType:'',tags:['获客破冰'],time:'11:37'},
+  {date:'7月6日 周日',scene:'客户说"再想想"',score:68,chg:'+10',chgType:'up',tags:['促成签单'],time:'09:15'},
+  {date:'7月5日 周六',scene:'保险都是骗人的',score:58,chg:'+5',chgType:'up',tags:['信任重建'],time:'09:30'},
+  {date:'7月4日 周五',scene:'重疾险产品讲解',score:70,chg:'-3',chgType:'down',tags:['产品讲解'],time:'16:15'},
+  {date:'7月4日 周五',scene:'客户说"太贵了"',score:58,chg:'+12',chgType:'up',tags:['异议处理'],time:'11:00'},
+  {date:'7月3日 周四',scene:'转介绍首次接触',score:65,chg:'NEW',chgType:'',tags:['获客破冰'],time:'14:45'},
+  {date:'7月2日 周三',scene:'客户说"再想想"',score:60,chg:'+6',chgType:'up',tags:['促成签单'],time:'10:20'},
+  {date:'7月2日 周三',scene:'客户说"已经有保险了"',score:72,chg:'+8',chgType:'up',tags:['异议处理'],time:'08:55'},
+  {date:'7月1日 周二',scene:'重疾险产品讲解',score:64,chg:'+2',chgType:'up',tags:['产品讲解'],time:'19:30'},
+  {date:'7月1日 周二',scene:'保险都是骗人的',score:53,chg:'NEW',chgType:'',tags:['信任重建'],time:'13:10'},
+  {date:'6月30日 周一',scene:'客户说"太贵了"',score:52,chg:'-5',chgType:'down',tags:['异议处理'],time:'09:40'},
+];
+
+var filteredData=historyData.slice();
+
+function renderDrawer(data){
+  var list=document.getElementById('drawerList');list.innerHTML='';
+  (data||historyData).forEach(function(h){
+    var c=h.chgType==='up'?'<span class="dri-chg up">↑'+h.chg+'</span>':h.chgType==='down'?'<span class="dri-chg down">↓'+h.chg+'</span>':'<span class="dri-chg" style="color:#999;">'+h.chg+'</span>';
+    var sd=h.date.split(' ')[0].replace('月','/').replace('日','');
+    list.innerHTML+='<div class="dr-item"><span class="dri-scene">'+h.scene+'</span><span class="dri-right"><span class="dri-score">'+h.score+'分</span>'+c+'<span class="dri-date">'+sd+'</span></span></div>';
+  });
+}
+function openDrawer(){
+  var ft=document.getElementById('homeReturn').style.display==='none';
+  var list=document.getElementById('drawerList');
+  if(ft){
+    list.innerHTML='<div style="text-align:center;padding:50px 20px;color:#ccc;font-size:14px;line-height:1.8;">还没有对练记录<br><span style="font-size:12px;color:#ddd;">完成第一次练习就会出现在这里</span></div>';
+  }else{
+    filteredData=historyData.slice();renderDrawer(filteredData);
+  }
+  document.getElementById('drawer').classList.add('on');document.getElementById('drawerOverlay').classList.add('on');
+}
+function closeDrawer(){document.getElementById('drawer').classList.remove('on');document.getElementById('drawerOverlay').classList.remove('on');}
+function searchDrawer(){
+  if(document.getElementById('homeReturn').style.display==='none') return;
+  var q=document.getElementById('drawerSearch').value.trim().toLowerCase();
+  if(!q){filteredData=historyData.slice();renderDrawer(filteredData);return;}
+  filteredData=historyData.filter(function(h){return h.scene.toLowerCase().indexOf(q)>-1||h.tags.join('').toLowerCase().indexOf(q)>-1;});
+  renderDrawer(filteredData);
+}
+
+function homeSend(){
+  var v=document.getElementById('chatInput').value.trim();if(!v)return;
+  var s=document.getElementById('homeScroll');
+  s.innerHTML+='<div class="msg-wrap"><div class="msg user fade"><div class="av" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:4px;background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;">👤</div><div class="bub" style="padding:10px 16px;border-radius:20px;font-size:15px;line-height:1.6;background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;border-bottom-right-radius:4px;">'+v+'</div></div></div>';
+  document.getElementById('chatInput').value='';
+  if(v.includes('练')||v.includes('开始'))setTimeout(function(){goPage('psc')},300);
+  else if(v.includes('能力')||v.includes('看'))setTimeout(function(){goPage('pd')},300);
+  else setTimeout(function(){s.innerHTML+='<div class="msg-wrap fade"><div class="msg ai"><div class="av">🤖</div><div class="bub">好的，你想练哪个场景？<div class="card" onclick="goPage(\'psc\')" style="margin-top:8px;"><div class="c-title">🎯 去选场景</div></div></div></div></div>';s.scrollTop=s.scrollHeight;},500);
+  setTimeout(function(){s.scrollTop=s.scrollHeight;},100);
+}
+
+function genCust(){
+  var v=document.getElementById('cu').value.trim();if(!v)return;
+  document.getElementById('pvBody').innerHTML='<b>客户画像：</b>'+v.substring(0,50)+'...<br><br>🎯 <b>练习目标：</b>需求分析 → 挖掘风险缺口<br><br>⏱ 预计 6-8 轮对话';
+  document.getElementById('pv').style.display='block';
+}
+
+function goPractice(n){
+  document.getElementById('pracTitle').textContent=n;
+  document.getElementById('pracChat').innerHTML='<div class="msg ai fade" style="max-width:92%;display:flex;gap:8px;margin-bottom:10px;"><div class="av" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;margin-top:4px;background:linear-gradient(135deg,#f0f2ff,#e0e4ff);">🤖</div><div class="bub" style="padding:10px 16px;border-radius:20px;font-size:15px;line-height:1.6;background:#f0f2f5;color:#1a1a1a;border-bottom-left-radius:4px;">你好张姐，上次聊的方案您考虑得怎么样了？</div></div>';
+  st=0;goPage('pp');
+}
+
+function pracSend(){
+  var v=document.getElementById('pracInput').value.trim();if(!v)return;
+  var c=document.getElementById('pracChat');
+  c.innerHTML+='<div class="msg user fade" style="max-width:88%;display:flex;gap:8px;margin-bottom:10px;align-self:flex-end;flex-direction:row-reverse;"><div class="av" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:4px;background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;">👤</div><div class="bub" style="padding:10px 16px;border-radius:20px;font-size:15px;line-height:1.6;background:linear-gradient(135deg,#6C63FF,#8B7CFA);color:#fff;border-bottom-right-radius:4px;">'+v+'</div></div>';
+  document.getElementById('pracInput').value='';
+  if(st<reps.length){
+    setTimeout(function(){c.innerHTML+='<div class="msg ai fade" style="max-width:92%;display:flex;gap:8px;margin-bottom:10px;"><div class="av" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;margin-top:4px;background:linear-gradient(135deg,#f0f2ff,#e0e4ff);">🤖</div><div class="bub" style="padding:10px 16px;border-radius:20px;font-size:15px;line-height:1.6;background:#f0f2f5;color:#1a1a1a;border-bottom-left-radius:4px;">'+reps[st]+'</div></div>';c.scrollTop=c.scrollHeight;st++;},500);
+  }else{
+    setTimeout(function(){c.innerHTML+='<div class="msg ai fade" style="max-width:92%;display:flex;gap:8px;margin-bottom:10px;"><div class="av">🤖</div><div class="bub">好的，本轮对练结束！生成评估报告。。。</div></div>';c.scrollTop=c.scrollHeight;setTimeout(function(){goPage('pr');},700);},500);
+  }
+  setTimeout(function(){c.scrollTop=c.scrollHeight;},100);
+}
+
+function showEnd(){document.getElementById('eo').classList.add('on');}
+function clEnd(){document.getElementById('eo').classList.remove('on');}
+function cfEnd(){document.getElementById('eo').classList.remove('on');goPage('pr');}
+function retryPrac(){goPractice('客户说太贵了');}
+</script>
+</div>
+</body>
+</html>

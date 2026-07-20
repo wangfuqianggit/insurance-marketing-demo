@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>个险AI营销助手 · 对话版</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-dark: #1d4ed8;
+  --primary-bg: #eff6ff;
+  --accent: #f59e0b;
+  --success: #10b981;
+  --danger: #ef4444;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #0f172a;
+  --text-secondary: #64748b;
+  --text-light: #94a3b8;
+  --border: #e2e8f0;
+  --shadow: 0 1px 4px rgba(0,0,0,0.06);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif; background: #e8ecf1; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+
+.phone {
+  width: 390px; height: 844px; background: var(--bg); border-radius: 40px;
+  overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  position: relative; display: flex; flex-direction: column;
+}
+.phone-notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 150px; height: 28px; background: #1a1a2e; border-radius: 0 0 16px 16px; z-index: 100; }
+.phone-notch::before { content: ''; position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 8px; height: 8px; background: #2d2d44; border-radius: 50%; }
+
+.status-bar { display: flex; justify-content: space-between; padding: 10px 24px 4px; font-size: 12px; font-weight: 600; color: #333; flex-shrink: 0; z-index: 50; }
+.status-bar .time { font-size: 14px; font-weight: 700; }
+
+.app { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+
+/* Header */
+.chat-header { padding: 12px 20px 8px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; background: var(--bg); z-index: 10; }
+.chat-header .ai-avatar { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #fff; }
+.chat-header .ai-info { flex: 1; }
+.chat-header .ai-name { font-size: 16px; font-weight: 700; color: var(--text); }
+.chat-header .ai-status { font-size: 12px; color: var(--text-light); display: flex; align-items: center; gap: 4px; }
+.chat-header .ai-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); display: inline-block; }
+.chat-header .header-actions { display: flex; gap: 16px; color: var(--text-secondary); font-size: 18px; cursor: pointer; }
+
+/* Chat Area */
+.chat-area { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
+.chat-area::-webkit-scrollbar { width: 0; }
+
+/* Message Bubbles */
+.msg { max-width: 88%; animation: msgIn .35s ease; flex-shrink: 0; }
+@keyframes msgIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+.msg-ai { align-self: flex-start; }
+.msg-ai .bubble {
+  background: var(--card); color: var(--text); border-radius: 4px 16px 16px 16px;
+  padding: 14px 16px; box-shadow: var(--shadow); line-height: 1.6; font-size: 14px;
+}
+.msg-ai .bubble p { margin-bottom: 6px; }
+.msg-ai .bubble p:last-child { margin-bottom: 0; }
+.msg-ai .label { font-size: 11px; color: var(--text-light); margin-bottom: 4px; margin-left: 4px; display: flex; align-items: center; gap: 4px; }
+
+.msg-user { align-self: flex-end; }
+.msg-user .bubble {
+  background: var(--primary); color: #fff; border-radius: 16px 4px 16px 16px;
+  padding: 12px 16px; font-size: 14px; line-height: 1.5;
+}
+
+/* Rich Cards inside AI messages */
+.rich-card {
+  background: var(--primary-bg); border-radius: var(--radius-sm); padding: 14px;
+  margin: 8px 0 4px; border-left: 3px solid var(--primary);
+}
+.rich-card .rc-title { font-size: 14px; font-weight: 600; }
+.rich-card .rc-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; color: var(--text-secondary); }
+.rich-card .rc-highlight { color: var(--primary); font-weight: 600; }
+
+.customer-mini { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.customer-mini:last-child { border-bottom: none; }
+.customer-mini .cm-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: 14px; flex-shrink: 0; }
+.customer-mini .cm-info { flex: 1; }
+.customer-mini .cm-name { font-size: 14px; font-weight: 600; }
+.customer-mini .cm-detail { font-size: 12px; color: var(--text-secondary); }
+
+.action-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.action-chip {
+  padding: 6px 14px; border-radius: 20px; font-size: 13px; border: 1px solid var(--border);
+  background: var(--card); cursor: pointer; color: var(--text-secondary); transition: all .2s;
+}
+.action-chip:active { background: var(--primary-bg); border-color: var(--primary); color: var(--primary); }
+
+/* Typing indicator */
+.typing-indicator { display: none; align-items: center; gap: 4px; padding: 12px 16px; background: var(--card); border-radius: 4px 16px 16px 16px; box-shadow: var(--shadow); align-self: flex-start; max-width: 80px; }
+.typing-indicator.show { display: flex; }
+.typing-indicator span { width: 6px; height: 6px; border-radius: 50%; background: var(--text-light); animation: typing 1.4s infinite; }
+.typing-indicator span:nth-child(2) { animation-delay: .2s; }
+.typing-indicator span:nth-child(3) { animation-delay: .4s; }
+@keyframes typing { 0%,60%,100% { opacity: 0.3; transform: scale(0.8); } 30% { opacity: 1; transform: scale(1); } }
+
+/* Input Bar */
+.input-bar {
+  display: flex; align-items: center; gap: 8px; padding: 10px 16px 16px; background: var(--bg); flex-shrink: 0; border-top: 1px solid var(--border);
+}
+.input-bar input {
+  flex: 1; border: none; border-radius: 24px; padding: 10px 16px; font-size: 14px;
+  background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,0.06); outline: none;
+}
+.input-bar input:focus { box-shadow: 0 0 0 2px var(--primary-light); }
+.input-bar .voice-btn, .input-bar .send-btn {
+  width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+}
+.input-bar .voice-btn { background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,0.06); color: var(--text-secondary); }
+.input-bar .send-btn { background: var(--primary); color: #fff; display: none; }
+.input-bar .send-btn.show { display: flex; }
+
+/* Scroll to bottom hint */
+.scroll-hint { position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%); background: var(--text); color: #fff; font-size: 12px; padding: 6px 16px; border-radius: 20px; opacity: 0; transition: opacity .3s; pointer-events: none; }
+.scroll-hint.show { opacity: 1; }
+
+/* Toast */
+.toast { position: absolute; bottom: 80px; left: 20px; right: 20px; z-index: 999; background: #1e293b; color: #fff; font-size: 14px; padding: 14px 20px; border-radius: 12px; text-align: center; opacity: 0; transform: translateY(20px); transition: all .3s; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 420px) { .phone { width: 100%; height: 100vh; border-radius: 0; } }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="phone-notch"></div>
+  <div class="status-bar"><span class="time" id="statusTime">9:41</span><span>●●●● ▮</span></div>
+
+  <div class="app">
+
+    <!-- Header -->
+    <div class="chat-header">
+      <div class="ai-avatar">AI</div>
+      <div class="ai-info">
+        <div class="ai-name">个险AI助手</div>
+        <div class="ai-status"><span class="dot"></span> 在线 · 随时为你服务</div>
+      </div>
+      <div class="header-actions">
+        <span onclick="showToast('🔔 暂无新通知')">🔔</span>
+        <span onclick="showToast('⚙️ 设置')">⚙️</span>
+      </div>
+    </div>
+
+    <!-- Chat Messages -->
+    <div class="chat-area" id="chatArea">
+      <!-- AI greeting will be injected here -->
+    </div>
+
+    <!-- Typing Indicator -->
+    <div class="typing-indicator" id="typingIndicator"><span></span><span></span><span></span></div>
+
+    <!-- Input Bar -->
+    <div class="input-bar">
+      <button class="voice-btn" onclick="showToast('🎤 语音输入（演示）')">🎤</button>
+      <input type="text" id="msgInput" placeholder="输入指令或问AI..." oninput="onInputChange()" onkeydown="if(event.key==='Enter')sendMessage()">
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+// ========== Toast ==========
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ========== State ==========
+let currentContext = 'home';
+let waitForResponse = false;
+
+// ========== Render Messages ==========
+const chatArea = document.getElementById('chatArea');
+const typingIndicator = document.getElementById('typingIndicator');
+
+function addMessage(type, content) {
+  const div = document.createElement('div');
+  div.className = `msg msg-${type}`;
+  if (type === 'ai') {
+    div.innerHTML = `<div class="label">🤖 个险AI助手</div><div class="bubble">${content}</div>`;
+  } else {
+    div.innerHTML = `<div class="bubble">${content}</div>`;
+  }
+  chatArea.insertBefore(div, typingIndicator);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function addRichMessage(html) {
+  const div = document.createElement('div');
+  div.className = 'msg msg-ai';
+  div.innerHTML = `<div class="label">🤖 个险AI助手</div><div class="bubble">${html}</div>`;
+  chatArea.insertBefore(div, typingIndicator);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function addUserMessage(text) {
+  addMessage('user', text);
+}
+
+function showTyping() { typingIndicator.classList.add('show'); chatArea.scrollTop = chatArea.scrollHeight; }
+function hideTyping() { typingIndicator.classList.remove('show'); }
+
+function aiReply(html, delay = 800) {
+  showTyping();
+  setTimeout(() => {
+    hideTyping();
+    addRichMessage(html);
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }, delay);
+}
+
+// ========== Initialize ==========
+function initChat() {
+  addRichMessage(`
+    <p>👋 早上好，小王！</p>
+    <p>今天 <b>7月14日 星期二</b>，我已经帮你梳理好了今日安排：</p>
+    <div class="rich-card">
+      <div class="rc-title">📋 今日拜访计划</div>
+      <div class="customer-mini">
+        <div class="cm-avatar" style="background:linear-gradient(135deg,#2563eb,#06b6d4);">张</div>
+        <div class="cm-info">
+          <div class="cm-name">张建国 <span style="font-size:11px;color:var(--danger);font-weight:500;">⭐ 高价值</span></div>
+          <div class="cm-detail">09:00 · 朝阳区 · 重疾续保沟通</div>
+        </div>
+      </div>
+      <div class="customer-mini">
+        <div class="cm-avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">王</div>
+        <div class="cm-info">
+          <div class="cm-name">王德峰 <span style="font-size:11px;color:var(--accent);font-weight:500;">保单到期</span></div>
+          <div class="cm-detail">11:00 · 西城区 · 保单到期提醒</div>
+        </div>
+      </div>
+      <div class="customer-mini">
+        <div class="cm-avatar" style="background:linear-gradient(135deg,#06b6d4,#10b981);">李</div>
+        <div class="cm-info">
+          <div class="cm-name">李美玲 <span style="font-size:11px;color:var(--text-light);font-weight:500;">潜力客户</span></div>
+          <div class="cm-detail">16:30 · 海淀区 · 需求挖掘</div>
+        </div>
+      </div>
+    </div>
+    <p>💡 <b>AI建议：</b>张建国的重疾险即将到期，客户妻子生日临近，建议优先准备综合方案。</p>
+    <div class="action-chips">
+      <span class="action-chip" onclick="quickAction('schedule')">📅 查看日程</span>
+      <span class="action-chip" onclick="quickAction('zhang')">📄 准备张建国方案</span>
+      <span class="action-chip" onclick="quickAction('route')">🗺️ 优化路线</span>
+      <span class="action-chip" onclick="quickAction('coach')">🤝 陪访准备</span>
+    </div>
+  `);
+}
+
+// ========== Quick Actions ==========
+function quickAction(type) {
+  switch(type) {
+    case 'schedule':
+      addUserMessage('今天的具体日程安排？');
+      aiReply(`
+        <p>📅 今日完整日程：</p>
+        <div class="rich-card" style="border-left-color:var(--success);">
+          <div style="padding:6px 0;display:flex;align-items:center;gap:10px;">
+            <div style="width:4px;height:32px;background:var(--primary);border-radius:2px;"></div>
+            <div><b style="color:var(--primary);">09:00-10:30</b> 拜访张建国 · 重疾续保</div>
+          </div>
+          <div style="padding:6px 0;display:flex;align-items:center;gap:10px;">
+            <div style="width:4px;height:32px;background:var(--accent);border-radius:2px;"></div>
+            <div><b style="color:var(--accent);">11:00-12:00</b> 拜访王德峰 · 保单到期</div>
+          </div>
+          <div style="padding:6px 0;display:flex;align-items:center;gap:10px;">
+            <div style="width:4px;height:32px;background:var(--success);border-radius:2px;"></div>
+            <div><b>12:00-13:30</b> 午餐休息</div>
+          </div>
+          <div style="padding:6px 0;display:flex;align-items:center;gap:10px;">
+            <div style="width:4px;height:32px;background:var(--secondary);border-radius:2px;"></div>
+            <div><b style="color:var(--secondary);">14:00-16:00</b> 陪访张建国（主管老李）</div>
+          </div>
+          <div style="padding:6px 0;display:flex;align-items:center;gap:10px;">
+            <div style="width:4px;height:32px;background:var(--text-light);border-radius:2px;"></div>
+            <div><b style="color:var(--text-light);">16:30-17:30</b> 拜访李美玲 · 需求挖掘</div>
+          </div>
+        </div>
+        <p>⏱ 今日效能评分 <b style="color:var(--primary);">85%</b>，交通时间占比略高，建议优化路线。</p>
+      `, 600);
+      break;
+    case 'zhang':
+      addUserMessage('帮我准备张建国的建议书');
+      aiReply(`
+        <p>好的！我已经根据张建国的情况生成了专属方案：</p>
+        <div class="rich-card" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--primary);">
+          <div class="rc-title">📄 家庭综合保障方案</div>
+          <div style="text-align:center;padding:12px 0;">
+            <span style="font-size:32px;font-weight:800;color:var(--primary);">50万</span>
+            <span style="font-size:13px;color:var(--text-secondary);"> 保额 · 年缴 8,650元</span>
+          </div>
+          <div class="rc-row"><span>产品</span><span>长城康健人生重疾险（升级版）</span></div>
+          <div class="rc-row"><span>保障范围</span><span>120重疾+40轻症+20中症</span></div>
+          <div class="rc-row"><span>缴费期限</span><span>20年</span></div>
+          <div style="margin-top:8px;padding:8px;background:#fef3c7;border-radius:6px;font-size:12px;">
+            🎂 客户妻子7月20日生日，建议同步推荐女性重疾险（年缴3,280元）
+          </div>
+        </div>
+        <div class="action-chips">
+          <span class="action-chip" onclick="showToast('📤 已通过微信发送给客户（演示）')">📤 发送给客户</span>
+          <span class="action-chip" onclick="showToast('📥 PDF下载中...（演示）')">📥 导出PDF</span>
+          <span class="action-chip" onclick="quickAction('materials')">📦 准备物料</span>
+        </div>
+      `, 1000);
+      break;
+    case 'route':
+      addUserMessage('帮我优化今天的拜访路线');
+      aiReply(`
+        <p>🗺️ 已优化路线方案：</p>
+        <div class="rich-card" style="border-left-color:var(--accent);">
+          <div style="font-size:13px;line-height:2;">
+            🏢 <b>公司</b><br>
+            <span style="color:var(--text-light);">→ 3.2km (约8min)</span><br>
+            📍 <b>① 张建国</b> 09:00-10:30 ⭐<br>
+            <span style="color:var(--text-light);">→ 5km (约12min)</span><br>
+            📍 <b>② 王德峰</b> 11:00-12:00<br>
+            <span style="color:var(--text-light);">→ 4.5km (约11min)</span><br>
+            📍 <b>③ 李美玲</b> 16:30-17:30<br>
+          </div>
+          <div style="margin-top:8px;padding:8px;background:#f1f5f9;border-radius:6px;font-size:12px;text-align:center;">
+            总里程 <b>12.7km</b> · 总交通时间 <b>约31min</b> · 比原路线节省 <b style="color:var(--success);">15min</b>
+          </div>
+        </div>
+        <p>✅ 建议出发时间：08:20，避开早高峰。</p>
+      `, 800);
+      break;
+    case 'coach':
+      addUserMessage('今天下午有陪访，帮我准备一下');
+      aiReply(`
+        <p>🤝 收到！下午14:00 陪访张建国（主管李国强陪同），已准备以下内容：</p>
+        <div class="rich-card" style="border-left-color:var(--secondary);">
+          ✅ 客户画像已同步<br>
+          ✅ 建议书已生成<br>
+          ✅ AI陪访要点已准备<br><br>
+          <b>AI建议陪访策略：</b><br>
+          1️⃣ 主谈由李主管负责，你辅助记录<br>
+          2️⃣ 重点应对客户费率疑虑<br>
+          3️⃣ 利用妻子生日作为情感切入点<br>
+          4️⃣ 准备两套方案给客户选择
+        </div>
+        <div class="action-chips">
+          <span class="action-chip" onclick="showToast('✅ 陪访已确认（演示）')">✅ 确认陪访</span>
+          <span class="action-chip" onclick="showToast('📊 客户历史陪访记录（演示）')">📊 历史记录</span>
+        </div>
+      `, 800);
+      break;
+    case 'materials':
+      addUserMessage('需要准备哪些物料？');
+      aiReply(`
+        <p>📦 基于沟通目标和客户画像，AI识别需要以下物料：</p>
+        <div class="rich-card">
+          <div style="display:flex;align-items:center;gap:10px;padding:4px 0;">
+            <span style="font-size:18px;">📄</span><span style="flex:1;">重疾险续保建议书</span><span style="color:var(--success);font-size:12px;">✅ 已生成</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:4px 0;">
+            <span style="font-size:18px;">🎂</span><span style="flex:1;">客户妻子生日贺卡</span><span style="color:var(--success);font-size:12px;">✅ 已生成</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:4px 0;">
+            <span style="font-size:18px;">🛡️</span><span style="flex:1;">女性重疾险产品单页</span><span style="color:var(--success);font-size:12px;">✅ 已生成</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:4px 0;">
+            <span style="font-size:18px;">📊</span><span style="flex:1;">家庭保障缺口分析报告</span><span style="color:var(--accent);font-size:12px;">⏳ 生成中</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:4px 0;">
+            <span style="font-size:18px;">📋</span><span style="flex:1;">投保申请书（预填）</span><span style="color:var(--primary);font-size:12px;">🖨️ 待打印</span>
+          </div>
+        </div>
+        <div class="action-chips">
+          <span class="action-chip" onclick="showToast('📦 物料打包完成（演示）')">📦 一键打包</span>
+          <span class="action-chip" onclick="showToast('🖨️ 已发送打印机（演示）')">🖨️ 一键打印</span>
+        </div>
+      `, 600);
+      break;
+    case 'summary':
+      addUserMessage('拜访结束了，帮我生成小结');
+      aiReply(`
+        <p>✅ 已自动生成拜访记录：</p>
+        <div class="rich-card" style="border-left-color:var(--success);">
+          <div class="rc-title">📋 拜访小结 · 张建国</div>
+          <div style="font-size:13px;padding:4px 0;">
+            <b>时间：</b>09:00-10:25（1h25min）<br>
+            <b>沟通主题：</b>重疾险续保 + 家庭保障升级<br>
+            <b>核心结论：</b>客户对升级版感兴趣，但想对比费率。妻子生日送礼需求明确。<br><br>
+            <b>意向评估：</b><span style="font-size:20px;font-weight:700;color:var(--success);">B+</span> 签单概率 75% · 预计保费 1.2-2万/年
+          </div>
+        </div>
+        <div class="rich-card" style="border-left-color:var(--accent);background:#fffbeb;">
+          <b>⏰ 已自动生成跟进待办：</b><br>
+          📞 <b>今天</b> 发送感谢消息<br>
+          📄 <b>明天</b> 补发详细资料<br>
+          🎂 <b>7月20日</b> 客户妻子生日祝福+方案
+        </div>
+        <div class="action-chips">
+          <span class="action-chip" onclick="showToast('💬 感谢消息已发送（演示）')">📤 发送感谢消息</span>
+          <span class="action-chip" onclick="showToast('📋 查看全部待办（演示）')">📋 待办列表</span>
+        </div>
+      `, 1200);
+      break;
+  }
+}
+
+// ========== Send Message ==========
+function onInputChange() {
+  const input = document.getElementById('msgInput');
+  const sendBtn = document.getElementById('sendBtn');
+  sendBtn.classList.toggle('show', input.value.trim().length > 0);
+}
+
+function sendMessage() {
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if (!text || waitForResponse) return;
+  input.value = '';
+  document.getElementById('sendBtn').classList.remove('show');
+  addUserMessage(text);
+  waitForResponse = true;
+
+  // Simple NLP matching
+  setTimeout(() => {
+    handleUserInput(text);
+    waitForResponse = false;
+  }, 400);
+}
+
+function handleUserInput(text) {
+  if (text.includes('日程') || text.includes('安排') || text.includes('今天有什么')) {
+    quickAction('schedule'); return;
+  }
+  if (text.includes('张建国') || text.includes('建议书') || text.includes('方案')) {
+    if (text.includes('物料') || text.includes('准备')) { quickAction('materials'); return; }
+    quickAction('zhang'); return;
+  }
+  if (text.includes('路线') || text.includes('导航') || text.includes('怎么走')) {
+    quickAction('route'); return;
+  }
+  if (text.includes('陪访') || text.includes('下午')) {
+    quickAction('coach'); return;
+  }
+  if (text.includes('小结') || text.includes('总结') || text.includes('结束')) {
+    quickAction('summary'); return;
+  }
+  if (text.includes('物料') || text.includes('打印') || text.includes('准备什么东西')) {
+    quickAction('materials'); return;
+  }
+  if (text.includes('你好') || text.includes('早安') || text.includes('在吗')) {
+    aiReply(`你好！我在呢，今天有什么需要帮忙的？随时跟我说 😊`);
+    return;
+  }
+  if (text.includes('产品') || text.includes('重疾') || text.includes('医疗')) {
+    aiReply(`
+      <p>关于产品问题，我帮你快速解答：</p>
+      <div class="rich-card">
+        <b>重疾险 vs 医疗险：</b><br>
+        <b>重疾险</b> → 确诊即赔一笔钱，自由支配<br>
+        <b>医疗险</b> → 住院花了多少报多少<br><br>
+        <b>简单类比：</b>重疾险是"中了彩票"，医疗险是"报销发票"，两者互为补充。
+      </div>
+      <p>还有其他想了解的吗？</p>
+    `);
+    return;
+  }
+  // Generic response
+  aiReply(`
+    <p>好的，我理解了。让我帮你处理「${text}」⋯⋯</p>
+    <p>根据你的工作数据和客户信息，我来给出建议。要不你先看看今天要拜访的客户？</p>
+    <div class="action-chips">
+      <span class="action-chip" onclick="quickAction('schedule')">📅 看日程</span>
+      <span class="action-chip" onclick="quickAction('route')">🗺️ 优化路线</span>
+      <span class="action-chip" onclick="quickAction('zhang')">📄 准备方案</span>
+    </div>
+  `, 1200);
+}
+
+// ========== Status Bar Time ==========
+function updateTime() {
+  const now = new Date();
+  document.getElementById('statusTime').textContent =
+    String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+}
+updateTime();
+setInterval(updateTime, 30000);
+
+// ========== Init ==========
+initChat();
+</script>
+</body>
+</html>

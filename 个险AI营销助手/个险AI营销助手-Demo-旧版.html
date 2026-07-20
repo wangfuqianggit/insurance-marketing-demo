@@ -1,0 +1,1871 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>个险AI营销助手</title>
+<style>
+/* ========== CSS Variables ========== */
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-dark: #1d4ed8;
+  --primary-bg: #eff6ff;
+  --secondary: #06b6d4;
+  --accent: #f59e0b;
+  --success: #10b981;
+  --danger: #ef4444;
+  --bg: #f0f4f8;
+  --card: #ffffff;
+  --text: #1e293b;
+  --text-secondary: #64748b;
+  --text-light: #94a3b8;
+  --border: #e2e8f0;
+  --shadow: 0 2px 12px rgba(0,0,0,0.06);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --header-height: 56px;
+  --tab-height: 64px;
+  --safe-bottom: 20px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif; background: #e8ecf1; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+
+/* ========== Phone Frame ========== */
+.phone {
+  width: 390px; height: 844px;
+  background: var(--bg);
+  border-radius: 40px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
+  position: relative;
+  display: flex; flex-direction: column;
+}
+.phone-notch {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 150px; height: 28px; background: #1a1a2e;
+  border-radius: 0 0 16px 16px; z-index: 100;
+}
+.phone-notch::before { content: ''; position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 8px; height: 8px; background: #2d2d44; border-radius: 50%; }
+
+/* ========== Status Bar ========== */
+.status-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 24px 4px; font-size: 12px; font-weight: 600;
+  color: #333; background: var(--bg);
+  flex-shrink: 0; z-index: 50;
+}
+.status-bar .time { font-size: 14px; font-weight: 700; }
+.status-bar .icons { display: flex; gap: 6px; font-size: 13px; }
+
+/* ========== App Content ========== */
+.app-container {
+  flex: 1; display: flex; flex-direction: column;
+  overflow: hidden; position: relative;
+}
+
+/* ========== Header ========== */
+.header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 20px 8px; flex-shrink: 0; z-index: 10;
+}
+.header h1 { font-size: 20px; font-weight: 700; color: var(--text); }
+.header .actions { display: flex; gap: 16px; color: var(--text-secondary); font-size: 20px; cursor: pointer; }
+.header-back {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 17px; font-weight: 500; color: var(--text);
+  cursor: pointer; border: none; background: none; padding: 4px 0;
+}
+.subpage-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 20px 8px;
+  background: var(--bg); flex-shrink: 0; z-index: 10;
+}
+
+/* ========== Main Scroll Area ========== */
+.main-content {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  padding: 0 16px 8px;
+  scroll-behavior: smooth;
+}
+.main-content::-webkit-scrollbar { width: 0; }
+
+/* ========== Tab Bar ========== */
+.tab-bar {
+  display: flex; justify-content: space-around; align-items: center;
+  padding: 6px 0 var(--safe-bottom);
+  background: var(--card); border-top: 1px solid var(--border);
+  flex-shrink: 0; position: relative; z-index: 50;
+}
+.tab-item {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-size: 11px; color: var(--text-light); cursor: pointer;
+  transition: color .2s; border: none; background: none; padding: 4px 12px;
+}
+.tab-item .tab-icon { font-size: 22px; line-height: 1; }
+.tab-item.active { color: var(--primary); }
+.tab-item.active .tab-icon { color: var(--primary); }
+
+/* ========== Page Container ========== */
+.page { display: none; flex-direction: column; }
+.page.active { display: flex; flex: 1; min-height: 0; }
+
+/* ========== Sub Pages (overlay) ========== */
+.subpage-overlay {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg); z-index: 80;
+  pointer-events: none; opacity: 0;
+  transform: translateX(100%); transition: all .3s ease;
+  display: flex; flex-direction: column;
+}
+.subpage-overlay.show {
+  pointer-events: auto; opacity: 1;
+  transform: translateX(0);
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes progressPulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+/* ========== Components ========== */
+
+/* Card */
+.card {
+  background: var(--card); border-radius: var(--radius);
+  padding: 16px; margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+.card-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+.card-title .more { font-size: 13px; color: var(--primary); font-weight: 400; cursor: pointer; }
+
+/* Badge */
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  font-size: 11px; font-weight: 500;
+}
+.badge-red { background: #fef2f2; color: var(--danger); }
+.badge-green { background: #ecfdf5; color: var(--success); }
+.badge-blue { background: var(--primary-bg); color: var(--primary); }
+.badge-amber { background: #fffbeb; color: #d97706; }
+
+/* Button */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 10px 20px; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 500; cursor: pointer;
+  border: none; transition: all .2s;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:active { background: var(--primary-dark); }
+.btn-outline { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+.btn-success { background: var(--success); color: #fff; }
+.btn-block { width: 100%; }
+.btn-sm { padding: 6px 14px; font-size: 13px; }
+
+/* Avatar */
+.avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 18px; font-weight: 600;
+  flex-shrink: 0;
+}
+.avatar-sm { width: 36px; height: 36px; font-size: 14px; }
+.avatar-lg { width: 56px; height: 56px; font-size: 24px; }
+
+/* Tag */
+.tag {
+  display: inline-block; padding: 3px 10px; border-radius: 6px;
+  font-size: 12px; background: var(--primary-bg); color: var(--primary);
+  margin: 2px;
+}
+
+/* ========== Home Page ========== */
+
+/* Greeting */
+.greeting { padding: 4px 20px 12px; flex-shrink: 0; }
+.greeting .hello { font-size: 24px; font-weight: 700; color: var(--text); }
+.greeting .date { font-size: 14px; color: var(--text-secondary); margin-top: 2px; }
+.greeting .weather { font-size: 14px; color: var(--text-secondary); }
+
+/* Stats Row */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+.stat-item {
+  background: var(--card); border-radius: var(--radius-sm);
+  text-align: center; padding: 12px 4px; box-shadow: var(--shadow);
+  cursor: pointer;
+}
+.stat-item .num { font-size: 22px; font-weight: 700; color: var(--primary); }
+.stat-item .label { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+/* Quick Actions */
+.quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+.quick-action {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 12px 4px; cursor: pointer; border-radius: var(--radius-sm);
+  transition: background .2s; border: none; background: none;
+}
+.quick-action:active { background: var(--border); }
+.quick-action .qa-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+.quick-action .qa-label { font-size: 12px; color: var(--text-secondary); }
+.qa-blue { background: #dbeafe; }
+.qa-green { background: #d1fae5; }
+.qa-amber { background: #fef3c7; }
+.qa-purple { background: #ede9fe; }
+
+/* Customer Card */
+.customer-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 0; border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.customer-card:last-child { border-bottom: none; }
+.customer-card .info { flex: 1; min-width: 0; }
+.customer-card .name { font-size: 15px; font-weight: 600; color: var(--text); }
+.customer-card .detail { font-size: 12px; color: var(--text-secondary); margin-top: 3px; display: flex; gap: 8px; flex-wrap: wrap; }
+.customer-card .right { text-align: right; flex-shrink: 0; }
+.customer-card .value { font-size: 15px; font-weight: 600; color: var(--primary); }
+.customer-card .value-label { font-size: 11px; color: var(--text-light); }
+.customer-card .priority { font-size: 11px; }
+.arrow-btns { display: none !important; }
+#routeStops.editing .arrow-btns { display: flex !important; }
+
+/* ========== Visit Subpages ========== */
+
+/* Customer Detail */
+.customer-detail-header {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff; padding: 20px 20px 30px; border-radius: 0 0 24px 24px;
+  margin: 0 -16px 16px;
+}
+.customer-detail-header .c-name { font-size: 24px; font-weight: 700; }
+.customer-detail-header .c-tags { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.customer-detail-header .c-tags span {
+  background: rgba(255,255,255,0.2); padding: 3px 12px; border-radius: 12px; font-size: 12px;
+}
+.customer-detail-header .c-stats { display: flex; gap: 24px; margin-top: 16px; }
+.customer-detail-header .c-stats div { text-align: center; }
+.customer-detail-header .c-stats .num { font-size: 20px; font-weight: 700; }
+.customer-detail-header .c-stats .label { font-size: 12px; opacity: 0.8; }
+
+/* Feature Grid */
+.feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.feature-item {
+  background: var(--card); border-radius: var(--radius);
+  padding: 16px; text-align: center; box-shadow: var(--shadow);
+  cursor: pointer; border: none; transition: all .2s;
+}
+.feature-item:active { transform: scale(0.97); }
+.feature-item .fi-icon { font-size: 28px; margin-bottom: 8px; }
+.feature-item .fi-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.feature-item .fi-desc { font-size: 11px; color: var(--text-light); margin-top: 4px; }
+
+/* Voice Recording */
+.voice-area {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 20px;
+}
+.voice-btn {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px; color: #fff; cursor: pointer;
+  transition: all .3s; box-shadow: 0 8px 30px rgba(37,99,235,0.3);
+  border: none;
+}
+.voice-btn.recording { animation: pulse 1.5s infinite; }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(37,99,235,0.4); }
+  70% { box-shadow: 0 0 0 20px rgba(37,99,235,0); }
+  100% { box-shadow: 0 0 0 0 rgba(37,99,235,0); }
+}
+.voice-btn:active { transform: scale(0.95); }
+.voice-status { margin-top: 16px; font-size: 15px; color: var(--text-secondary); }
+.voice-wave { display: flex; gap: 4px; margin-top: 24px; align-items: center; height: 40px; }
+.voice-wave span {
+  width: 4px; border-radius: 2px; background: var(--primary);
+  animation: wave 1s ease-in-out infinite;
+}
+.voice-wave span:nth-child(1) { height: 20px; animation-delay: .0s; }
+.voice-wave span:nth-child(2) { height: 32px; animation-delay: .1s; }
+.voice-wave span:nth-child(3) { height: 44px; animation-delay: .2s; }
+.voice-wave span:nth-child(4) { height: 36px; animation-delay: .3s; }
+.voice-wave span:nth-child(5) { height: 24px; animation-delay: .4s; }
+.voice-wave span:nth-child(6) { height: 40px; animation-delay: .5s; }
+.voice-wave span:nth-child(7) { height: 28px; animation-delay: .6s; }
+@keyframes wave {
+  0%,100% { transform: scaleY(0.5); }
+  50% { transform: scaleY(1); }
+}
+
+.voice-transcript {
+  background: var(--card); border-radius: var(--radius);
+  padding: 16px; margin: 16px; max-height: 200px; overflow-y: auto;
+  font-size: 14px; line-height: 1.7; color: var(--text);
+}
+
+/* Chat / QA */
+.chat-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.msg { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; animation: fadeIn .3s ease; }
+.msg-user { align-self: flex-end; background: var(--primary); color: #fff; border-bottom-right-radius: 4px; }
+.msg-ai { align-self: flex-start; background: var(--card); color: var(--text); border-bottom-left-radius: 4px; box-shadow: var(--shadow); }
+.msg-input-bar {
+  display: flex; gap: 8px; padding: 12px 16px;
+  background: var(--card); border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.msg-input-bar input {
+  flex: 1; border: 1px solid var(--border); border-radius: 20px;
+  padding: 10px 16px; font-size: 14px; outline: none;
+}
+.msg-input-bar input:focus { border-color: var(--primary); }
+.msg-input-bar button {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--primary); color: #fff; border: none; font-size: 18px;
+  cursor: pointer; flex-shrink: 0;
+}
+
+/* Summary */
+.summary-section { margin-bottom: 16px; }
+.summary-section h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.summary-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.summary-tags .tag { padding: 4px 12px; border-radius: 14px; font-size: 12px; }
+.summary-text { font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
+
+/* ========== Proposal ========== */
+.proposal-header { text-align: center; padding: 20px 0 16px; }
+.proposal-header h2 { font-size: 20px; font-weight: 700; color: var(--text); }
+.proposal-header p { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+.proposal-amount { text-align: center; padding: 16px; }
+.proposal-amount .big { font-size: 42px; font-weight: 800; color: var(--primary); }
+.proposal-amount .unit { font-size: 16px; color: var(--text-secondary); }
+.proposal-amount .label { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
+.proposal-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.proposal-table th, .proposal-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+.proposal-table th { font-weight: 600; color: var(--text-secondary); font-size: 12px; }
+.proposal-table td { color: var(--text); }
+
+/* ========== Schedule ========== */
+.schedule-header { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding: 4px 0; }
+.schedule-header::-webkit-scrollbar { display: none; }
+.day-tab {
+  flex-shrink: 0; padding: 8px 16px; border-radius: 10px;
+  font-size: 13px; background: var(--card); cursor: pointer;
+  text-align: center; border: none; color: var(--text-secondary);
+}
+.day-tab.active { background: var(--primary); color: #fff; font-weight: 600; }
+.day-tab .dow { font-size: 11px; }
+.day-tab .dom { font-size: 18px; font-weight: 700; display: block; }
+
+/* ========== Coach (陪访) ========== */
+.coach-card {
+  display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.coach-card:last-child { border-bottom: none; }
+.coach-card .coach-info { flex: 1; }
+.coach-card .coach-name { font-size: 15px; font-weight: 600; }
+.coach-card .coach-detail { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+.coach-card .coach-status { font-size: 12px; font-weight: 500; }
+
+/* ========== Profile ========== */
+.profile-header-card {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff; padding: 24px 20px; border-radius: var(--radius-lg);
+  margin-bottom: 16px; text-align: center;
+}
+.profile-header-card .p-name { font-size: 20px; font-weight: 700; margin-top: 8px; }
+.profile-header-card .p-title { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+.profile-header-card .p-stats { display: flex; justify-content: center; gap: 32px; margin-top: 16px; }
+.profile-header-card .p-stats .num { font-size: 18px; font-weight: 700; }
+.profile-header-card .p-stats .label { font-size: 11px; opacity: 0.7; }
+
+.menu-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 0; border-bottom: 1px solid var(--border);
+  cursor: pointer; border: none; background: none; width: 100%; text-align: left;
+}
+.menu-item:last-child { border-bottom: none; }
+.menu-item .mi-icon { font-size: 20px; width: 28px; text-align: center; }
+.menu-item .mi-text { flex: 1; font-size: 14px; color: var(--text); }
+.menu-item .mi-arrow { color: var(--text-light); font-size: 16px; }
+
+/* Chart placeholders */
+.chart-placeholder {
+  background: linear-gradient(135deg, #dbeafe, #ede9fe);
+  border-radius: var(--radius-sm); height: 160px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: var(--text-secondary);
+}
+
+/* ========== Animations for demo ========== */
+.demo-progress {
+  display: flex; gap: 6px; justify-content: center; padding: 12px 0 4px;
+}
+.demo-progress .dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--border);
+  transition: all .3s;
+}
+.demo-progress .dot.active { background: var(--primary); width: 20px; border-radius: 3px; }
+
+/* Route map mock */
+.route-map {
+  background: #e8f4f8; border-radius: var(--radius);
+  height: 200px; position: relative; overflow: hidden;
+  margin-bottom: 12px;
+}
+.route-map svg { width: 100%; height: 100%; }
+
+/* Toast notification */
+.toast {
+  position: absolute; bottom: 80px; left: 20px; right: 20px; z-index: 999;
+  background: #1e293b; color: #fff; font-size: 14px;
+  padding: 14px 20px; border-radius: 12px; text-align: center;
+  opacity: 0; transform: translateY(20px); transition: all .3s ease;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* Misc */
+.text-center { text-align: center; }
+.mt-8 { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-16 { margin-bottom: 16px; }
+.gap-8 { gap: 8px; }
+.flex { display: flex; }
+.flex-1 { flex: 1; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.text-secondary { color: var(--text-secondary); font-size: 13px; }
+
+/* Quick demo navigation hint */
+.demo-nav-hint {
+  position: absolute; bottom: 80px; right: 16px; z-index: 200;
+  background: rgba(0,0,0,0.7); color: #fff; font-size: 12px;
+  padding: 6px 14px; border-radius: 20px; pointer-events: none;
+  animation: hintPulse 2s infinite;
+}
+@keyframes hintPulse {
+  0%,100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+/* Responsive scaling for smaller screens */
+@media (max-width: 420px) {
+  .phone { width: 100%; height: 100vh; border-radius: 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <div class="phone-notch"></div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span class="time" id="statusTime">9:41</span>
+    <span class="icons">●●●● ▮</span>
+  </div>
+
+  <div class="app-container" id="appContainer">
+
+    <!-- ==================== HOME PAGE ==================== -->
+    <div class="page active" id="pageHome">
+      <div class="header">
+        <h1>个险AI营销助手</h1>
+        <div class="actions">
+          <span onclick="showToast('🔔 暂无新通知')">🔔</span>
+          <span onclick="showToast('⚙️ 设置（演示版）')">⚙️</span>
+        </div>
+      </div>
+
+      <div class="main-content">
+        <!-- Greeting -->
+        <div class="greeting">
+          <div class="hello">早上好，小王 👋</div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;">
+            <span class="date">2026年7月13日 星期一</span>
+            <span class="weather">☀️ 26°C 适宜外出</span>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+          <div class="stat-item" onclick="openVisit()"><div class="num">3</div><div class="label">今日拜访</div></div>
+          <div class="stat-item" onclick="openSubpage('subTodo')"><div class="num" style="color:var(--secondary);">2</div><div class="label">跟进待办</div></div>
+          <div class="stat-item" onclick="switchTab(2,'pageCoach')"><div class="num" style="color:var(--accent);">1</div><div class="label">待陪访</div></div>
+          <div class="stat-item" onclick="openSubpage('subScheduleDetail')"><div class="num" style="color:var(--success);">85%</div><div class="label">日程效率</div></div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+          <button class="quick-action" onclick="openSubpage('subVisiting')">
+            <div class="qa-icon qa-blue">🎤</div>
+            <span class="qa-label">开始拜访</span>
+          </button>
+          <button class="quick-action" onclick="openSubpage('subCoachDetail')">
+            <div class="qa-icon qa-green">🤝</div>
+            <span class="qa-label">陪访管理</span>
+          </button>
+          <button class="quick-action" onclick="openSubpage('subProposal')">
+            <div class="qa-icon qa-amber">📄</div>
+            <span class="qa-label">智能建议书</span>
+          </button>
+          <button class="quick-action" onclick="openSubpage('subScheduleDetail')">
+            <div class="qa-icon qa-purple">📊</div>
+            <span class="qa-label">日程效能</span>
+          </button>
+        </div>
+
+        <!-- Today's Recommendations -->
+        <div class="card">
+          <div class="card-title">
+            <span>今日推荐拜访</span>
+            <span class="more" onclick="openVisit()">查看全部 →</span>
+          </div>
+          <div class="customer-card" onclick="openVisit()">
+            <div class="avatar" style="background:linear-gradient(135deg,#2563eb,#06b6d4);">张</div>
+            <div class="info">
+              <div class="name">张建国 <span class="badge badge-red" style="margin-left:6px;">高价值</span></div>
+              <div class="detail"><span>📍 朝阳区建国路88号</span><span>🕐 距上次拜访 23天</span></div>
+            </div>
+            <div class="right">
+              <div class="value">A级</div>
+              <div class="value-label">优先拜访</div>
+            </div>
+          </div>
+          <div class="customer-card" onclick="openVisit()">
+            <div class="avatar" style="background:linear-gradient(135deg,#06b6d4,#10b981);">李</div>
+            <div class="info">
+              <div class="name">李美玲 <span class="badge badge-amber" style="margin-left:6px;">潜力</span></div>
+              <div class="detail"><span>📍 海淀区中关村南大街</span><span>🕐 距上次拜访 45天</span></div>
+            </div>
+            <div class="right">
+              <div class="value">B级</div>
+              <div class="value-label">建议拜访</div>
+            </div>
+          </div>
+          <div class="customer-card" onclick="openVisit()">
+            <div class="avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">王</div>
+            <div class="info">
+              <div class="name">王德峰 <span class="badge badge-blue" style="margin-left:6px;">复购</span></div>
+              <div class="detail"><span>📍 西城区金融街</span><span>🕐 保单即将到期</span></div>
+            </div>
+            <div class="right">
+              <div class="value">A级</div>
+              <div class="value-label">优先拜访</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Tips -->
+        <div class="card" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #bfdbfe;cursor:pointer;" onclick="openSubpage('subCustomerDetail')">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-size:28px;">💡</span>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--primary);">AI 建议 — 点击查看详情</div>
+              <div style="font-size:13px;color:var(--text-secondary);margin-top:2px;">客户张建国的重疾险即将到期，建议今日重点沟通续保方案，已为你准备好建议书。</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:16px;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== VISIT PAGE ==================== -->
+    <div class="page" id="pageVisit">
+      <div class="header">
+        <h1>智能拜访</h1>
+        <div class="actions"><span onclick="showToast('🔍 搜索客户（演示版）')">🔍</span></div>
+      </div>
+      <div class="main-content">
+        <div class="card">
+          <div class="card-title"><span>今日拜访计划</span><span class="more" onclick="showToast('🔄 已按客户价值+紧迫度重新排序')">智能排序 →</span></div>
+          <!-- Customer 1 -->
+          <div class="customer-card" onclick="openSubpage('subCustomerDetail')">
+            <div class="avatar" style="background:linear-gradient(135deg,#2563eb,#06b6d4);">张</div>
+            <div class="info">
+              <div class="name">张建国 <span class="badge badge-red" style="margin-left:6px;">高价值</span></div>
+              <div class="detail"><span>年龄 45岁</span><span>家庭 4口</span><span>年保费 8.6万</span></div>
+            </div>
+            <div class="right">
+              <div class="priority" style="color:var(--primary);font-weight:600;">排序 1</div>
+              <div class="value-label">推荐指数 96</div>
+            </div>
+          </div>
+          <!-- Customer 2 -->
+          <div class="customer-card" onclick="openSubpage('subCustomerDetail')">
+            <div class="avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">王</div>
+            <div class="info">
+              <div class="name">王德峰 <span class="badge badge-blue" style="margin-left:6px;">保单到期</span></div>
+              <div class="detail"><span>年龄 52岁</span><span>家庭 3口</span><span>年保费 12万</span></div>
+            </div>
+            <div class="right">
+              <div class="priority" style="color:var(--primary);font-weight:600;">排序 2</div>
+              <div class="value-label">推荐指数 88</div>
+            </div>
+          </div>
+          <!-- Customer 3 -->
+          <div class="customer-card" onclick="openSubpage('subCustomerDetail')">
+            <div class="avatar" style="background:linear-gradient(135deg,#06b6d4,#10b981);">李</div>
+            <div class="info">
+              <div class="name">李美玲 <span class="badge badge-amber" style="margin-left:6px;">潜力客户</span></div>
+              <div class="detail"><span>年龄 34岁</span><span>家庭 2口</span><span>年保费 1.2万</span></div>
+            </div>
+            <div class="right">
+              <div class="priority" style="color:var(--text-light);font-weight:600;">排序 3</div>
+              <div class="value-label">推荐指数 72</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>拜访准备</span></div>
+          <div class="feature-grid">
+            <button class="feature-item" onclick="openSubpage('subRoute');setTimeout(updateRouteNumbers,350)">
+              <div class="fi-icon">🗺️</div>
+              <div class="fi-title">路线规划</div>
+              <div class="fi-desc">3个客户，优化路线</div>
+            </button>
+            <button class="feature-item" onclick="openSubpage('subProposal')">
+              <div class="fi-icon">📄</div>
+              <div class="fi-title">准备建议书</div>
+              <div class="fi-desc">已生成2份方案</div>
+            </button>
+            <button class="feature-item" onclick="openSubpage('subMaterials')">
+              <div class="fi-icon">📦</div>
+              <div class="fi-title">物料准备</div>
+              <div class="fi-desc">AI识别5项物料</div>
+            </button>
+            <button class="feature-item" onclick="showToast('🎯 AI推荐议题：重疾险续保 + 家庭保障升级 + 配偶生日方案')">
+              <div class="fi-icon">📊</div>
+              <div class="fi-title">沟通目标</div>
+              <div class="fi-desc">AI推荐议题</div>
+            </button>
+          </div>
+        </div>
+
+        <div style="height:16px;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== COACH PAGE ==================== -->
+    <div class="page" id="pageCoach">
+      <div class="header">
+        <h1>陪访管理</h1>
+        <div class="actions"><span onclick="showToast('🔍 搜索陪访记录（演示版）')">🔍</span></div>
+      </div>
+      <div class="main-content">
+        <!-- Stats -->
+        <div class="stats-row" style="grid-template-columns:repeat(3,1fr);">
+          <div class="stat-item"><div class="num" style="color:var(--accent);">1</div><div class="label">待陪访</div></div>
+          <div class="stat-item"><div class="num" style="color:var(--success);">3</div><div class="label">本月完成</div></div>
+          <div class="stat-item"><div class="num">67%</div><div class="label">陪访成单率</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>待陪访清单</span><span class="more" onclick="showToast('🔍 AI智能筛选：已识别3位高潜力陪访对象')">智能筛选 →</span></div>
+          <div class="coach-card" onclick="openSubpage('subCoachDetail')">
+            <div class="avatar avatar-sm" style="background:linear-gradient(135deg,#2563eb,#06b6d4);">张</div>
+            <div class="coach-info">
+              <div class="coach-name">张建国 <span class="badge badge-red" style="margin-left:6px;">高复杂</span></div>
+              <div class="coach-detail">代理人：王小明（新人） | 涉及险种：重疾+年金</div>
+              <div class="coach-detail">📍 朝阳区建国路88号 | 🕐 今日下午 14:00</div>
+            </div>
+            <div class="coach-status" style="color:var(--accent);">待确认</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>本月陪访记录</span><span class="more" onclick="showToast('📊 展开全部陪访记录')">查看全部 →</span></div>
+          <div class="coach-card" onclick="showToast('📋 陈秀英 - 复盘：需求把握准确，促成技巧待提升')">
+            <div class="avatar avatar-sm" style="background:linear-gradient(135deg,#06b6d4,#10b981);">陈</div>
+            <div class="coach-info">
+              <div class="coach-name">陈秀英 <span class="badge badge-green" style="margin-left:6px;">已成交</span></div>
+              <div class="coach-detail">代理人：李芳 | 2026-07-10</div>
+              <div class="coach-detail">复盘：需求把握准确，促成技巧待提升</div>
+            </div>
+          </div>
+          <div class="coach-card" onclick="showToast('📋 刘伟强 - 复盘：异议处理得当，已成单20万')">
+            <div class="avatar avatar-sm" style="background:linear-gradient(135deg,#10b981,#f59e0b);">刘</div>
+            <div class="coach-info">
+              <div class="coach-name">刘伟强 <span class="badge badge-green" style="margin-left:6px;">已成交</span></div>
+              <div class="coach-detail">代理人：赵岩 | 2026-07-08</div>
+              <div class="coach-detail">复盘：异议处理得当，已成单20万</div>
+            </div>
+          </div>
+          <div class="coach-card" onclick="showToast('📋 周志明 - 复盘：产品讲解清晰，需加强促成意识')">
+            <div class="avatar avatar-sm" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">周</div>
+            <div class="coach-info">
+              <div class="coach-name">周志明 <span class="badge badge-amber" style="margin-left:6px;">跟进中</span></div>
+              <div class="coach-detail">代理人：王小明 | 2026-07-05</div>
+              <div class="coach-detail">复盘：产品讲解清晰，需加强促成意识</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>优秀案例推荐</span></div>
+          <div style="padding:12px;background:var(--primary-bg);border-radius:var(--radius-sm);margin-bottom:8px;cursor:pointer;" onclick="showToast('🏆 代理人张华运用三追问法，成功转化犹豫客户，签单15万')">
+            <div style="font-size:14px;font-weight:600;">🏆 如何应对"我再想想"</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">代理人张华运用三追问法，成功转化犹豫客户，最终签单15万。</div>
+          </div>
+          <div style="padding:12px;background:var(--primary-bg);border-radius:var(--radius-sm);cursor:pointer;" onclick="showToast('🏆 陪访团队配合，年缴50万大单的完整流程拆解')">
+            <div style="font-size:14px;font-weight:600;">🏆 高端客户家庭保障方案</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">陪访团队配合，年缴50万大单的完整陪访流程拆解。</div>
+          </div>
+        </div>
+
+        <div style="height:16px;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== SCHEDULE PAGE ==================== -->
+    <div class="page" id="pageSchedule">
+      <div class="header">
+        <h1>日程管家</h1>
+        <div class="actions"><span>📅</span></div>
+      </div>
+      <div class="main-content">
+        <div class="schedule-header" id="scheduleHeader">
+          <button class="day-tab" onclick="selectDay(this)"><span class="dow">日</span><span class="dom">12</span></button>
+          <button class="day-tab active" onclick="selectDay(this)"><span class="dow">一</span><span class="dom">13</span></button>
+          <button class="day-tab" onclick="selectDay(this)"><span class="dow">二</span><span class="dom">14</span></button>
+          <button class="day-tab" onclick="selectDay(this)"><span class="dow">三</span><span class="dom">15</span></button>
+          <button class="day-tab" onclick="selectDay(this)"><span class="dow">四</span><span class="dom">16</span></button>
+          <button class="day-tab" onclick="selectDay(this)"><span class="dow">五</span><span class="dom">17</span></button>
+          <button class="day-tab" onclick="selectDay(this)"><span class="dow">六</span><span class="dom">18</span></button>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>7月13日 行程</span></div>
+          <div style="position:relative;padding-left:20px;border-left:2px solid var(--border);margin-left:8px;">
+            <div style="position:relative;padding-bottom:20px;cursor:pointer;" onclick="openSubpage('subCustomerDetail')">
+              <div style="position:absolute;left:-25px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--primary);border:2px solid #fff;"></div>
+              <div style="font-size:12px;color:var(--primary);font-weight:600;">09:00 - 10:30</div>
+              <div style="font-size:14px;font-weight:500;">拜访张建国</div>
+              <div style="font-size:12px;color:var(--text-secondary);">重疾险续保沟通 | 已准备好建议书 ✓</div>
+            </div>
+            <div style="position:relative;padding-bottom:20px;cursor:pointer;" onclick="showToast('📋 拜访王德峰：保单到期提醒 + 新产品推荐')">
+              <div style="position:absolute;left:-25px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid #fff;"></div>
+              <div style="font-size:12px;color:var(--accent);font-weight:600;">11:00 - 12:00</div>
+              <div style="font-size:14px;font-weight:500;">拜访王德峰</div>
+              <div style="font-size:12px;color:var(--text-secondary);">保单到期提醒 + 新产品推荐</div>
+            </div>
+            <div style="position:relative;padding-bottom:20px;cursor:pointer;" onclick="showToast('🍽️ 午休时间 12:00-13:30')">
+              <div style="position:absolute;left:-25px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--success);border:2px solid #fff;"></div>
+              <div style="font-size:12px;color:var(--success);font-weight:600;">12:00 - 13:30</div>
+              <div style="font-size:14px;font-weight:500;">午餐 & 休息</div>
+            </div>
+            <div style="position:relative;padding-bottom:20px;cursor:pointer;" onclick="openSubpage('subCoachDetail')">
+              <div style="position:absolute;left:-25px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--secondary);border:2px solid #fff;"></div>
+              <div style="font-size:12px;color:var(--secondary);font-weight:600;">14:00 - 16:00</div>
+              <div style="font-size:14px;font-weight:500;">陪访 - 张建国（主管老李）</div>
+              <div style="font-size:12px;color:var(--text-secondary);">复杂需求，主管支持</div>
+            </div>
+            <div style="position:relative;cursor:pointer;" onclick="showToast('📋 拜访李美玲：新客户需求挖掘')">
+              <div style="position:absolute;left:-25px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--border);border:2px solid #fff;"></div>
+              <div style="font-size:12px;color:var(--text-light);font-weight:600;">16:30 - 17:30</div>
+              <div style="font-size:14px;font-weight:500;">拜访李美玲</div>
+              <div style="font-size:12px;color:var(--text-secondary);">新客户需求挖掘</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>本周效能分析</span></div>
+          <div class="chart-placeholder" style="height:200px;flex-direction:column;gap:8px;">
+            <div style="font-size:24px;font-weight:700;color:var(--primary);">85%</div>
+            <div style="font-size:13px;">有效拜访时间占比 ↑ 12%</div>
+            <div style="width:80%;margin-top:8px;">
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span>拜访</span><span>45%</span></div>
+              <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;"><div style="width:45%;height:100%;background:var(--primary);border-radius:3px;"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin:8px 0 4px;"><span>交通</span><span>22%</span></div>
+              <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;"><div style="width:22%;height:100%;background:var(--accent);border-radius:3px;"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin:8px 0 4px;"><span>案头工作</span><span>18%</span></div>
+              <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;"><div style="width:18%;height:100%;background:var(--secondary);border-radius:3px;"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin:8px 0 4px;"><span>其他</span><span>15%</span></div>
+              <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;"><div style="width:15%;height:100%;background:var(--text-light);border-radius:3px;"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:16px;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== PROFILE PAGE ==================== -->
+    <div class="page" id="pageProfile">
+      <div class="header">
+        <h1>我的</h1>
+      </div>
+      <div class="main-content">
+        <div class="profile-header-card">
+          <div class="avatar avatar-lg" style="margin:0 auto;">王</div>
+          <div class="p-name">王小明</div>
+          <div class="p-title">长城人寿 · 高级代理人 · 从业3年</div>
+          <div class="p-stats">
+            <div><div class="num">47</div><div class="label">本月客户</div></div>
+            <div><div class="num">12</div><div class="label">本月签单</div></div>
+            <div><div class="num">18.6万</div><div class="label">本月保费</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <button class="menu-item" onclick="showToast('📋 本月拜访记录：15次拜访，签单8单')"><span class="mi-icon">📋</span><span class="mi-text">我的拜访记录</span><span class="mi-arrow">›</span></button>
+          <button class="menu-item" onclick="showToast('📊 本月业绩：签单12单，保费18.6万，目标完成率82%')"><span class="mi-icon">📊</span><span class="mi-text">业绩统计</span><span class="mi-arrow">›</span></button>
+          <button class="menu-item" onclick="showToast('🏆 成长档案：已完成3次陪访，评分A-，建议加强促成技巧')"><span class="mi-icon">🏆</span><span class="mi-text">我的成长档案</span><span class="mi-arrow">›</span></button>
+          <button class="menu-item" onclick="showToast('📚 知识库：产品资料 · 话术库 · 合规指引 · 优秀案例')"><span class="mi-icon">📚</span><span class="mi-text">知识库</span><span class="mi-arrow">›</span></button>
+        </div>
+
+        <div class="card">
+          <button class="menu-item" onclick="showToast('⚙️ 设置页面（演示版）')"><span class="mi-icon">⚙️</span><span class="mi-text">设置</span><span class="mi-arrow">›</span></button>
+          <button class="menu-item" onclick="showToast('💬 帮助中心：请致电长城人寿客服热线 95576')"><span class="mi-icon">💬</span><span class="mi-text">帮助与反馈</span><span class="mi-arrow">›</span></button>
+        </div>
+
+        <div style="height:16px;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== SUBPAGE: Customer Detail ==================== -->
+    <div class="subpage-overlay" id="subCustomerDetail">
+      <div class="subpage-header">
+        <button class="header-back" onclick="closeSubpage('subCustomerDetail')">‹ 返回</button>
+        <span style="font-size:14px;color:var(--text-secondary);">客户详情</span>
+        <span></span>
+      </div>
+      <div class="main-content" style="padding-top:0;">
+        <div class="customer-detail-header">
+          <div class="c-name">张建国</div>
+          <div class="c-tags"><span>45岁</span><span>已婚有子女</span><span>企业中层</span><span>年收入50万</span></div>
+          <div class="c-stats">
+            <div><div class="num">8.6万</div><div class="label">年保费</div></div>
+            <div><div class="num">3份</div><div class="label">已有保单</div></div>
+            <div><div class="num">96分</div><div class="label">价值评分</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>客户画像</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
+            <div><span class="text-secondary">家庭结构</span><br><span>配偶(42岁) + 儿子(16岁) + 女儿(10岁)</span></div>
+            <div><span class="text-secondary">已有保障</span><br><span>意外险(20万) + 医疗险(5万)</span></div>
+            <div><span class="text-secondary">保障缺口</span><br><span style="color:var(--danger);">重疾保障缺失</span></div>
+            <div><span class="text-secondary">风险偏好</span><br><span>稳健型，关注长期保障</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>AI 沟通建议</span></div>
+          <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;">
+            <div style="padding:8px 12px;background:var(--primary-bg);border-radius:8px;margin-bottom:8px;">
+              <span style="font-weight:600;color:var(--primary);">🎯 核心议题：</span>重疾险续保方案 + 家庭综合保障升级
+            </div>
+            <div style="padding:8px 12px;background:#fef3c7;border-radius:8px;margin-bottom:8px;">
+              <span style="font-weight:600;color:#d97706;">💡 促成要点：</span>客户妻子生日临近，可推荐女性重疾险作为礼物方案
+            </div>
+            <div style="padding:8px 12px;background:#ecfdf5;border-radius:8px;">
+              <span style="font-weight:600;color:#059669;">📋 物料准备：</span>重疾险建议书 × 1，家庭保障方案 × 1，生日海报 × 1
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+          <button class="btn btn-primary btn-block" style="padding:14px;" onclick="closeSubpage('subCustomerDetail');openSubpage('subVisiting');">
+            🎤 开始拜访
+          </button>
+          <button class="btn btn-outline btn-block" style="padding:14px;" onclick="openSubpage('subProposal');">
+            📄 查看建议书
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== SUBPAGE: Route Planning ==================== -->
+    <div class="subpage-overlay" id="subRoute">
+      <div class="subpage-header">
+        <button class="header-back" onclick="closeSubpage('subRoute')">‹ 返回</button>
+        <span style="font-size:14px;color:var(--text-secondary);">路线规划</span>
+        <span style="font-size:16px;cursor:pointer;color:var(--primary);font-weight:500;" id="routeEditBtn" onclick="toggleRouteEdit()">编辑</span>
+      </div>
+      <div class="main-content" style="padding-top:0;">
+        <div class="route-map">
+          <svg viewBox="0 0 360 200">
+            <rect width="360" height="200" fill="#e8f4f8"/>
+            <line x1="0" y1="80" x2="360" y2="80" stroke="#cbd5e1" stroke-width="2"/>
+            <line x1="180" y1="10" x2="180" y2="190" stroke="#cbd5e1" stroke-width="2"/>
+            <line x1="40" y1="40" x2="320" y2="160" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4"/>
+            <circle cx="60" cy="50" r="10" fill="#10b981"/>
+            <text x="60" y="45" text-anchor="middle" fill="#fff" font-size="12" font-weight="bold">🏠</text>
+            <text x="60" y="70" text-anchor="middle" fill="#333" font-size="11">起点</text>
+            <polyline points="60,50 130,70 220,100 300,140" fill="none" stroke="#2563eb" stroke-width="3" stroke-dasharray="6,4"/>
+            <circle cx="130" cy="70" r="10" fill="#2563eb"/>
+            <text x="130" y="75" text-anchor="middle" fill="#fff" font-size="12" font-weight="bold">1</text>
+            <text x="130" y="92" text-anchor="middle" fill="#333" font-size="11">张建国</text>
+            <circle cx="220" cy="100" r="10" fill="#f59e0b"/>
+            <text x="220" y="105" text-anchor="middle" fill="#fff" font-size="12" font-weight="bold">2</text>
+            <text x="220" y="122" text-anchor="middle" fill="#333" font-size="11">王德峰</text>
+            <circle cx="300" cy="140" r="10" fill="#06b6d4"/>
+            <text x="300" y="145" text-anchor="middle" fill="#fff" font-size="12" font-weight="bold">3</text>
+            <text x="300" y="162" text-anchor="middle" fill="#333" font-size="11">李美玲</text>
+          </svg>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span id="routeSummary">最优路线</span></div>
+          <div style="display:flex;gap:10px;padding:10px;background:#f1f5f9;border-radius:8px;margin-bottom:12px;">
+            <span style="font-size:13px;">📍</span>
+            <span style="font-size:13px;" id="routePathText">公司 → 张建国(3.2km) → 王德峰(4.8km) → 李美玲(4.5km)</span>
+          </div>
+          <div style="display:flex;gap:10px;padding:10px;background:#f1f5f9;border-radius:8px;margin-bottom:12px;">
+            <span style="font-size:13px;">⏱️</span>
+            <span style="font-size:13px;" id="routeTimeText">预计：09:00-10:30 张建国 → 11:00-12:00 王德峰 → 16:30-17:30 李美玲</span>
+          </div>
+          <div style="font-size:12px;color:var(--primary);font-weight:500;text-align:center;padding:4px;" id="routeTotalInfo">总里程 12.5km | 预计 45min</div>
+        </div>
+
+        <!-- Route Stops (reorderable) -->
+        <div class="card" id="routeStopsCard">
+          <div class="card-title"><span>拜访顺序 <span style="font-size:12px;font-weight:400;color:var(--text-light);">（点击箭头调整）</span></span></div>
+          <div id="routeStops">
+            <div class="customer-card" data-index="0">
+              <div class="arrow-btns" style="flex-direction:column;gap:4px;margin-right:8px;">
+                <button class="btn btn-sm" style="padding:2px 8px;font-size:12px;background:var(--border);" onclick="moveRouteStop(0, -1)">↑</button>
+                <button class="btn btn-sm" style="padding:2px 8px;font-size:12px;background:var(--border);" onclick="moveRouteStop(0, 1)">↓</button>
+              </div>
+              <div class="num-badge" style="width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;">1</div>
+              <div class="info">
+                <div class="name">张建国 <span class="badge badge-red" style="margin-left:6px;">高价值</span></div>
+                <div class="detail">朝阳区建国路88号</div>
+              </div>
+            </div>
+            <div class="customer-card" data-index="1">
+              <div class="arrow-btns" style="flex-direction:column;gap:4px;margin-right:8px;">
+                <button class="btn btn-sm" style="padding:2px 8px;font-size:12px;background:var(--border);" onclick="moveRouteStop(1, -1)">↑</button>
+                <button class="btn btn-sm" style="padding:2px 8px;font-size:12px;background:var(--border);" onclick="moveRouteStop(1, 1)">↓</button>
+              </div>
+              <div class="num-badge" style="width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;">2</div>
+              <div class="info">
+                <div class="name">王德峰 <span class="badge badge-amber" style="margin-left:6px;">保单到期</span></div>
+                <div class="detail">西城区金融街</div>
+              </div>
+            </div>
+            <div class="customer-card" data-index="2">
+              <div class="arrow-btns" style="flex-direction:column;gap:4px;margin-right:8px;">
+                <button class="btn btn-sm" style="padding:2px 8px;font-size:12px;background:var(--border);" onclick="moveRouteStop(2, -1)">↑</button>
+                <button class="btn btn-sm" style="padding:2px 8px;font-size:12px;background:var(--border);" onclick="moveRouteStop(2, 1)">↓</button>
+              </div>
+              <div class="num-badge" style="width:28px;height:28px;border-radius:50%;background:var(--secondary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;">3</div>
+              <div class="info">
+                <div class="name">李美玲 <span class="badge badge-blue" style="margin-left:6px;">潜力客户</span></div>
+                <div class="detail">海淀区中关村南大街</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-block" style="padding:14px;" onclick="closeSubpage('subRoute');showToast('✅ 路线已确认，开始拜访！')">
+          ✅ 确认路线，开始拜访
+        </button>
+        <div style="height:16px;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== SUBPAGE: Materials ==================== -->
+    <div class="subpage-overlay" id="subMaterials">
+      <div class="subpage-header">
+        <button class="header-back" onclick="closeSubpage('subMaterials')">‹ 返回</button>
+        <span style="font-size:14px;color:var(--text-secondary);">物料准备</span>
+        <span></span>
+      </div>
+      <div class="main-content" style="padding-top:0;">
+        <div style="padding:16px 0 12px;">
+          <div style="font-size:18px;font-weight:700;">张建国 - 拜访物料清单</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">基于客户画像和沟通目标，AI自动识别以下所需物料</div>
+        </div>
+
+        <div class="card" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);">
+          <div style="display:flex;gap:10px;align-items:center;">
+            <span style="font-size:24px;">🤖</span>
+            <div style="font-size:13px;line-height:1.6;">
+              <b>AI 分析：</b>本次拜访核心议题为重疾险续保及家庭保障升级，客户妻子生日临近可作为切入点。建议准备以下物料——
+            </div>
+          </div>
+        </div>
+
+        <!-- Material 1 -->
+        <div class="card">
+          <div style="display:flex;gap:12px;align-items:center;">
+            <div style="width:40px;height:40px;background:#dbeafe;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;">📄</div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:600;">重疾险续保建议书</div>
+              <div style="font-size:12px;color:var(--text-secondary);">50万保额，20年缴，含新旧方案对比</div>
+            </div>
+            <span class="badge badge-green">已生成</span>
+          </div>
+          <button class="btn btn-sm btn-primary" style="margin-top:10px;width:100%;" onclick="openSubpage('subProposal')">📋 查看建议书</button>
+        </div>
+
+        <!-- Material 2 -->
+        <div class="card">
+          <div style="display:flex;gap:12px;align-items:center;">
+            <div style="width:40px;height:40px;background:#d1fae5;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;">🎂</div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:600;">客户妻子生日贺卡</div>
+              <div style="font-size:12px;color:var(--text-secondary);">AI生成祝福文案 + 女性重疾险推荐语，7月20日生日</div>
+            </div>
+            <span class="badge badge-green">已生成</span>
+          </div>
+          <button class="btn btn-sm btn-outline" style="margin-top:10px;width:100%;" onclick="showToast('🎨 生日贺卡已生成（演示版）')">🎨 预览贺卡</button>
+        </div>
+
+        <!-- Material 3 -->
+        <div class="card">
+          <div style="display:flex;gap:12px;align-items:center;">
+            <div style="width:40px;height:40px;background:#fef3c7;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;">📊</div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:600;">家庭保障缺口分析报告</div>
+              <div style="font-size:12px;color:var(--text-secondary);">现有保障5万 vs 建议80万，可视化对比</div>
+            </div>
+            <span class="badge badge-amber">生成中</span>
+          </div>
+          <div style="margin-top:10px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+            <div style="width:60%;height:100%;background:var(--accent);border-radius:2px;animation:progressPulse 2s infinite;"></div>
+          </div>
+        </div>
+
+        <!-- Material 4 -->
+        <div class="card">
+          <div style="display:flex;gap:12px;align-items:center;">
+            <div style="width:40px;height:40px;background:#fce7f3;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;">🛡️</div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:600;">女性重疾险产品单页</div>
+              <div style="font-size:12px;color:var(--text-secondary);">丽人安康女性重疾险，生日礼物方案</div>
+            </div>
+            <span class="badge badge-green">已生成</span>
+          </div>
+          <button class="btn btn-sm btn-outline" style="margin-top:10px;width:100%;" onclick="showToast('📥 正在下载PDF...（演示版）')">📥 下载PDF</button>
+        </div>
+
+        <!-- Material 5 -->
+        <div class="card">
+          <div style="display:flex;gap:12px;align-items:center;">
+            <div style="width:40px;height:40px;background:#ede9fe;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;">📋</div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:600;">投保申请书（预填）</div>
+              <div style="font-size:12px;color:var(--text-secondary);">客户信息已自动填充，现场签字即可</div>
+            </div>
+            <span class="badge badge-blue">待打印</span>
+          </div>
+          <button class="btn btn-sm btn-outline" style="margin-top:10px;width:100%;" onclick="showToast('🖨️ 已发送到指定打印机（演示版）')">🖨️ 一键打印</button>
+        </div>
+
+        <div style="padding:12px;text-align:center;color:var(--text-light);font-size:12px;">
+          ✅ 5项物料中 3项已就绪，1项生成中，1项待打印
+        </div>
+
+        <button class="btn btn-primary btn-block" style="margin-bottom:16px;" onclick="showToast('📦 5项物料打包完成，已保存至「物料包」')">
+          📦 一键打包全部物料
+        </button>
+        <div style="height:16px;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== SUBPAGE: Visiting (Voice) ==================== -->
+    <div class="subpage-overlay" id="subVisiting">
+      <div class="subpage-header">
+        <button class="header-back" onclick="stopVisit();closeSubpage('subVisiting')">‹ 结束拜访</button>
+        <span id="recBadge" style="font-size:13px;padding:4px 12px;background:#f1f5f9;color:var(--text-light);border-radius:12px;">● 待录音</span>
+        <span></span>
+      </div>
+      <div class="main-content" style="padding-top:0;display:flex;flex-direction:column;">
+        <div style="padding:12px 0;">
+          <div style="font-size:15px;font-weight:600;">张建国 - 拜访中</div>
+          <div style="font-size:12px;color:var(--text-secondary);" id="recTimer">准备就绪</div>
+        </div>
+
+        <!-- Pre-recording state -->
+        <div id="preRecordState" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+          <div style="font-size:16px;color:var(--text-secondary);text-align:center;">
+            点击下方按钮开始录音<br>
+            <span style="font-size:13px;">AI将自动转写对话内容</span>
+          </div>
+          <button class="voice-btn" id="recordBtn" onclick="toggleRecording()">
+            🎤
+          </button>
+        </div>
+
+        <!-- Recording state (initially hidden) -->
+        <div id="recordingState" style="display:none;flex-direction:column;flex:1;">
+          <div class="voice-wave" style="justify-content:center;">
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+          </div>
+
+          <div class="voice-transcript" id="transcriptBox" style="flex:1;max-height:none;">
+            <div style="color:var(--text-secondary);margin-bottom:8px;">— 实时转写 —</div>
+            <div id="transcriptContent">
+              <div style="color:var(--text-secondary);font-style:italic;">等待对话开始...</div>
+            </div>
+          </div>
+
+          <!-- Quick Actions during visit -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;flex-shrink:0;">
+            <button class="btn btn-outline btn-sm" style="justify-content:center;" onclick="openSubpage('subSpeech')">
+              💬 话术助手
+            </button>
+            <button class="btn btn-outline btn-sm" style="justify-content:center;" onclick="openSubpage('subQA')">
+              ❓ 智能问答
+            </button>
+            <button class="btn btn-outline btn-sm" style="justify-content:center;" onclick="openSubpage('subProposal')">
+              📄 展示方案
+            </button>
+          </div>
+
+          <button class="btn btn-success btn-block" style="margin-bottom:16px;flex-shrink:0;" onclick="stopVisit();closeSubpage('subVisiting');openSubpage('subSummary');">
+            ✅ 结束拜访，生成小结
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== SUBPAGE: Speech Assistant ==================== -->
+    <div class="subpage-overlay" id="subSpeech">
+      <div class="subpage-header">
+        <button class="header-back" onclick="closeSubpage('subSpeech')">‹ 返回</button>
+        <span style="font-size:14px;color:var(--text-secondary);">话术助手</span>
+        <span></span>
+      </div>
+      <div class="main-content">
+        <div style="display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding:4px 0;">
+          <button class="btn btn-primary btn-sm" style="flex-shrink:0;" onclick="switchSpeechTab(this)">异议处理</button>
+          <button class="btn btn-outline btn-sm" style="flex-shrink:0;" onclick="switchSpeechTab(this)">产品介绍</button>
+          <button class="btn btn-outline btn-sm" style="flex-shrink:0;" onclick="switchSpeechTab(this)">促成签单</button>
+          <button class="btn btn-outline btn-sm" style="flex-shrink:0;" onclick="switchSpeechTab(this)">客户约访</button>
+        </div>
+
+        <div class="card" style="border-left:3px solid var(--primary);">
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">客户说"太贵了"</div>
+          <div style="font-size:14px;line-height:1.7;">
+            张哥，我理解您的顾虑。其实咱们换个角度想，每天只需要20多块钱，也就是一顿午饭钱，但换来的是一辈子的安心保障。
+            而且越年轻买，保费越低，现在续保比过几年再买要划算得多。
+          </div>
+          <div style="margin-top:10px;padding:8px;background:#fef2f2;border-radius:6px;font-size:13px;color:var(--danger);">
+            ⚠️ 避免说："这个真的不贵"、"别人都买得起"等比较性话术
+          </div>
+        </div>
+
+        <div class="card" style="border-left:3px solid var(--accent);">
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">客户说"我再考虑考虑"</div>
+          <div style="font-size:14px;line-height:1.7;">
+            张哥，我特别理解您想慎重考虑。要不这样，我帮您梳理一下今天聊到的几个重点：
+            第一，这份保障解决的是万一发生重大疾病时的收入损失问题；
+            第二，现在是续保窗口期，过了这个月就要重新核保了；
+            第三......您看您最关心的是哪个方面，我再给您详细讲讲？
+          </div>
+        </div>
+
+        <div class="card" style="border-left:3px solid var(--success);background:#f0fdf4;">
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">🎯 促成话术（基于当前对话生成）</div>
+          <div style="font-size:14px;line-height:1.7;">
+            张哥，刚才您也提到了想给嫂子一份保障作为生日礼物，这个想法真的特别好。
+            我们有一个女性专属的重疾险，正好覆盖了您提到的那些担心。要不我把方案做出来您看看？
+          </div>
+        </div>
+
+        <div style="height:16px;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== SUBPAGE: Q&A ==================== -->
+    <div class="subpage-overlay" id="subQA">
+      <div class="subpage-header">
+        <button class="header-back" onclick="closeSubpage('subQA')">‹ 返回</button>
+        <span style="font-size:14px;color:var(--text-secondary);">智能问答</span>
+        <span></span>
+      </div>
+      <div class="chat-area" id="chatArea">
+        <div style="font-size:12px;color:var(--text-light);text-align:center;margin-bottom:8px;">基于客户张建国的画像和当前对话背景</div>
+        <div class="msg msg-ai">您好！我是AI助理，有什么关于产品、条款、投保规则的问题都可以问我。</div>
+        <div class="msg msg-user">重疾险和医疗险有什么区别？客户问了好几次了。</div>
+        <div class="msg msg-ai">
+          简单来说：<br/><br/>
+          <b>重疾险</b>（给付型）：确诊合同约定的重大疾病，一次性赔付保额。这笔钱您自由支配，用于治疗、康复、家庭开支都行。<br/><br/>
+          <b>医疗险</b>（报销型）：住院治疗花了多少，报销多少（扣除免赔额）。<br/><br/>
+          <b>类比：</b>重疾险是"中了彩票"，医疗险是"报销发票"。两者的作用不同，互为补充。<br/><br/>
+          针对张先生的情况，他目前只有医疗险（5万额度），重疾保障是完全缺失的，建议优先补充重疾保障。
+        </div>
+        <div class="msg msg-user">这款重疾险的等待期多久？</div>
+        <div class="msg msg-ai">
+          我们这款产品的等待期为 <b>90天</b>（意外伤害无等待期）。<br/><br/>
+          等待期内因非意外原因出险，不承担保险责任，但合同继续有效。<br/><br/>
+          建议让客户尽早投保，早过等待期早安心。
+        </div>
+        <div style="font-size:12px;color:var(--text-light);text-align:center;margin-top:8px;">—— 以上为演示对话 ——</div>
+        <div style="flex:1;"></div>
+      </div>
+      <div class="msg-input-bar">
+        <input type="text" placeholder="输入问题..." id="qaInput" onkeydown="if(event.key==='Enter')sendQA()">
+        <button onclick="sendQA()">➤</button>
+      </div>
+    </div>
+
+    <!-- ==================== SUBPAGE: Summary ==================== -->
+    <div class="subpage-overlay" id="subSummary">
+      <div class="subpage-header">
+        <button class="header-back" onclick="closeSubpage('subSummary');switchTab(0,'pageHome')">‹ 返回首页</button>
+        <span style="font-size:14px;color:var(--text-secondary);">拜访小结</span>
+        <span></span>
+      </div>
+      <div class="main-content" style="padding-top:0;">
+        <div style="text-align:center;padding:20px 0 12px;">
+          <div style="font-size:40px;">✅</div>
+          <div style="font-size:18px;font-weight:700;margin-top:8px;">拜访已结束</div>
+          <div style="font-size:13px;color:var(--text-secondary);">AI 已自动生成拜访记录</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>📋 拜访摘要</span></div>
+          <div style="font-size:13px;line-height:1.7;color:var(--text-secondary);">
+            <p><b>客户：</b>张建国</p>
+            <p><b>时间：</b>2026-07-13 09:00 - 10:25（1h25min）</p>
+            <p><b>沟通主题：</b>重疾险续保方案沟通 + 家庭综合保障建议</p>
+            <p style="margin-top:8px;"><b>核心内容：</b>客户对续保费率表示关注，已澄清不会涨价。客户主动询问新产品，对升级版的重疾+轻症保障感兴趣。客户妻子即将过生日，有潜在的女性重疾险需求。</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>📌 客户需求识别</span></div>
+          <div class="summary-tags">
+            <span class="tag" style="background:#dbeafe;color:#1d4ed8;">重疾续保</span>
+            <span class="tag" style="background:#d1fae5;color:#065f46;">升级保障</span>
+            <span class="tag" style="background:#fef3c7;color:#92400e;">配偶保障</span>
+            <span class="tag" style="background:#fce7f3;color:#9d174d;">生日礼物需求</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>📊 客户意向评估</span></div>
+          <div style="display:flex;gap:16px;align-items:center;">
+            <div style="text-align:center;">
+              <div style="font-size:32px;font-weight:700;color:var(--success);">B+</div>
+              <div style="font-size:11px;color:var(--text-light);">意向等级</div>
+            </div>
+            <div style="flex:1;">
+              <div style="display:flex;justify-content:space-between;font-size:12px;"><span>签单概率</span><span>75%</span></div>
+              <div style="height:6px;background:var(--border);border-radius:3px;margin:4px 0 8px;"><div style="width:75%;height:100%;background:var(--success);border-radius:3px;"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;"><span>预计保费</span><span>1.2万 - 2万/年</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="border-left:3px solid var(--accent);">
+          <div class="card-title"><span>⏰ 跟进待办（已自动生成）</span></div>
+          <div style="margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;font-size:14px;"><span>📞 24h内 · 感谢联络</span><span style="color:var(--accent);font-size:12px;">今天</span></div>
+            <div style="font-size:12px;color:var(--text-secondary);">发送感谢消息，重申方案核心价值</div>
+          </div>
+          <div style="margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;font-size:14px;"><span>📄 48h内 · 补发详细资料</span><span style="color:var(--primary);font-size:12px;">明天</span></div>
+            <div style="font-size:12px;color:var(--text-secondary);">发送家庭综合保障方案+女性重疾险资料</div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:14px;"><span>🎂 7月20日 · 客户妻子生日</span><span style="color:var(--success);font-size:12px;">7天后</span></div>
+            <div style="font-size:12px;color:var(--text-secondary);">提前准备生日祝福和女性重疾险方案</div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-block" style="margin-bottom:8px;" onclick="closeSubpage('subSummary');openSubpage('subTodo');">
+          📋 查看全部待办
+        </button>
+        <button class="btn btn-outline btn-block" onclick="closeSubpage('subSummary');switchTab(0,'pageHome')">
+          🏠 返回工作台
+        </button>
+        <div style="height:16px;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== SUBPAGE: TODO ==================== -->
+    <div class="subpage-overlay" id="subTodo">
+      <div class="subpage-header">
+        <button class="header-back" onclick="closeSubpage('subTodo')">‹ 返回</button>
+        <span style="font-size:14px;color:var(--text-secondary);">跟进待办</span>
+        <span></span>
+      </div>
+      <div class="main-content">
+        <div class="stats-row" style="grid-template-columns:repeat(3,1fr);">
+          <div class="stat-item"><div class="num" style="color:var(--accent);">2</div><div class="label">今日待办</div></div>
+          <div class="stat-item"><div class="num">5</div><div class="label">本周待办</div></div>
+          <div class="stat-item"><div class="num" style="color:var(--success);">12</div><div class="label">已完成</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>📌 今日必做</span></div>
+          <div style="display:flex;gap:12px;padding:12px;background:#fef3c7;border-radius:8px;margin-bottom:8px;">
+            <input type="checkbox" style="margin-top:3px;width:18px;height:18px;">
+            <div>
+              <div style="font-size:14px;font-weight:500;">感谢联络 - 张建国</div>
+              <div style="font-size:12px;color:var(--text-secondary);">发送感谢消息，今日内完成</div>
+              <button class="btn btn-sm btn-primary" style="margin-top:6px;" onclick="closeSubpage('subTodo')">💬 一键发送</button>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;padding:12px;background:#fef3c7;border-radius:8px;">
+            <input type="checkbox" style="margin-top:3px;width:18px;height:18px;">
+            <div>
+              <div style="font-size:14px;font-weight:500;">陪访确认 - 张建国/老李</div>
+              <div style="font-size:12px;color:var(--text-secondary);">下午14:00陪访，确认资料已准备</div>
+              <span class="badge badge-amber" style="margin-top:6px;">需主管确认</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>📅 明日待办</span></div>
+          <div style="display:flex;gap:12px;padding:12px;margin-bottom:4px;">
+            <input type="checkbox" style="margin-top:3px;width:18px;height:18px;">
+            <div>
+              <div style="font-size:14px;font-weight:500;">补发资料 - 张建国</div>
+              <div style="font-size:12px;color:var(--text-secondary);">家庭保障方案+女性重疾险资料</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>📅 本周待办</span></div>
+          <div style="display:flex;gap:12px;padding:12px;margin-bottom:4px;">
+            <input type="checkbox" style="margin-top:3px;width:18px;height:18px;">
+            <div>
+              <div style="font-size:14px;font-weight:500;">客户王德峰 - 保单到期提醒</div>
+              <div style="font-size:12px;color:var(--text-secondary);">7月15日前完成拜访</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;padding:12px;">
+            <input type="checkbox" style="margin-top:3px;width:18px;height:18px;">
+            <div>
+              <div style="font-size:14px;font-weight:500;">客户李美玲 - 需求挖掘跟进</div>
+              <div style="font-size:12px;color:var(--text-secondary);">新客户，安排二次拜访</div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-outline btn-block" onclick="closeSubpage('subTodo');switchTab(0,'pageHome')" style="margin-top:8px;">
+          🏠 返回工作台
+        </button>
+        <div style="height:16px;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== SUBPAGE: Proposal ==================== -->
+    <div class="subpage-overlay" id="subProposal">
+      <div class="subpage-header">
+        <button class="header-back" onclick="closeSubpage('subProposal')">‹ 返回</button>
+        <span style="font-size:14px;color:var(--text-secondary);">智能建议书</span>
+        <span style="font-size:20px;cursor:pointer;">⋯</span>
+      </div>
+      <div class="main-content" style="padding-top:0;">
+        <div class="proposal-header">
+          <h2>家庭综合保障方案</h2>
+          <p>客户：张建国 | 生成时间：2026-07-13</p>
+        </div>
+
+        <div class="card" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);text-align:center;">
+          <div style="font-size:13px;color:var(--text-secondary);">AI 需求诊断</div>
+          <div style="font-size:14px;margin-top:8px;line-height:1.6;text-align:left;padding:0 8px;">
+            根据张先生的家庭结构和已有保障分析，目前主要保障缺口为：
+            <b>重大疾病保障缺失</b>（0保障），建议优先配置重疾险；
+            同时可考虑为妻子增加一份女性专属重疾保障。
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>推荐方案一：重疾保障升级</span><span class="badge badge-red">主推</span></div>
+          <div style="text-align:center;padding:8px 0;">
+            <span class="big" style="font-size:36px;font-weight:800;color:var(--primary);">50万</span>
+            <span style="font-size:14px;color:var(--text-secondary);"> 保额</span>
+          </div>
+          <table class="proposal-table">
+            <tr><th>项目</th><th>内容</th></tr>
+            <tr><td>产品名称</td><td>长城康健人生重疾险（升级版）</td></tr>
+            <tr><td>保障期限</td><td>至70周岁 / 终身</td></tr>
+            <tr><td>缴费期限</td><td>20年 / 30年</td></tr>
+            <tr><td>年缴保费</td><td style="font-weight:600;color:var(--primary);">8,650元（20年缴）</td></tr>
+            <tr><td>保障范围</td><td>120种重疾 + 40种轻症 + 20种中症</td></tr>
+            <tr><td>轻症豁免</td><td>确诊轻症，后续保费豁免</td></tr>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>推荐方案二：配偶女性重疾保障</span><span class="badge badge-amber">生日礼遇</span></div>
+          <table class="proposal-table">
+            <tr><th>项目</th><th>内容</th></tr>
+            <tr><td>产品名称</td><td>长城丽人安康女性重疾险</td></tr>
+            <tr><td>保额</td><td>30万</td></tr>
+            <tr><td>年缴保费</td><td style="font-weight:600;color:var(--accent);">3,280元</td></tr>
+            <tr><td>特色保障</td><td>女性特定疾病额外赔付</td></tr>
+          </table>
+          <div style="margin-top:8px;padding:8px;background:#fef3c7;border-radius:6px;font-size:12px;">
+            🎂 客户妻子生日7月20日，建议以此作为切入点
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>方案对比</span></div>
+          <div style="display:flex;gap:8px;height:120px;align-items:flex-end;padding:0 8px;">
+            <div style="flex:1;text-align:center;">
+              <div style="height:80px;background:var(--primary);border-radius:6px 6px 0 0;"></div>
+              <div style="font-size:11px;margin-top:4px;">现有保障</div>
+              <div style="font-size:12px;font-weight:600;">5万</div>
+            </div>
+            <div style="flex:1;text-align:center;">
+              <div style="height:100px;background:linear-gradient(to top,#2563eb,#06b6d4);border-radius:6px 6px 0 0;"></div>
+              <div style="font-size:11px;margin-top:4px;">方案一</div>
+              <div style="font-size:12px;font-weight:600;">50万</div>
+            </div>
+            <div style="flex:1;text-align:center;">
+              <div style="height:60px;background:var(--accent);border-radius:6px 6px 0 0;"></div>
+              <div style="font-size:11px;margin-top:4px;">方案二</div>
+              <div style="font-size:12px;font-weight:600;">30万</div>
+            </div>
+            <div style="flex:1;text-align:center;">
+              <div style="height:110px;background:linear-gradient(to top,#059669,#10b981);border-radius:6px 6px 0 0;"></div>
+              <div style="font-size:11px;margin-top:4px;">合计</div>
+              <div style="font-size:12px;font-weight:600;">80万</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+          <button class="btn btn-primary btn-block" style="padding:14px;" onclick="showToast('📤 方案已通过微信发送给张建国（演示版）')">
+            📤 发送给客户
+          </button>
+          <button class="btn btn-outline btn-block" style="padding:14px;" onclick="showToast('📥 PDF已生成，共计3页（演示版）')">
+            📥 导出PDF
+          </button>
+        </div>
+        <div style="height:16px;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== SUBPAGE: Schedule Detail ==================== -->
+    <div class="subpage-overlay" id="subScheduleDetail">
+      <div class="subpage-header">
+        <button class="header-back" onclick="closeSubpage('subScheduleDetail')">‹ 返回</button>
+        <span style="font-size:14px;color:var(--text-secondary);">今日效能</span>
+        <span></span>
+      </div>
+      <div class="main-content" style="padding-top:0;">
+        <div class="proposal-header">
+          <h2>📊 今日效能分析</h2>
+          <p>2026年7月13日 星期一</p>
+        </div>
+
+        <div class="stats-row" style="grid-template-columns:repeat(2,1fr);">
+          <div class="stat-item"><div class="num" style="color:var(--success);">85%</div><div class="label">日程效率</div></div>
+          <div class="stat-item"><div class="num" style="color:var(--accent);">3单</div><div class="label">今日目标</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>⏱ 时间分配</span></div>
+          <div style="width:100%;margin-top:8px;">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span>拜访客户</span><span>45%</span></div>
+            <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;"><div style="width:45%;height:100%;background:var(--primary);border-radius:4px;"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin:10px 0 4px;"><span>交通</span><span>22%</span></div>
+            <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;"><div style="width:22%;height:100%;background:var(--accent);border-radius:4px;"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin:10px 0 4px;"><span>案头工作</span><span>18%</span></div>
+            <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;"><div style="width:18%;height:100%;background:var(--secondary);border-radius:4px;"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin:10px 0 4px;"><span>休息</span><span>15%</span></div>
+            <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;"><div style="width:15%;height:100%;background:var(--text-light);border-radius:4px;"></div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>📅 行程一览</span></div>
+          <div style="display:flex;gap:12px;padding:8px 0;align-items:center;">
+            <div style="width:4px;height:40px;background:var(--primary);border-radius:2px;"></div>
+            <div><div style="font-size:14px;font-weight:500;">09:00-10:30 拜访张建国</div><div style="font-size:12px;color:var(--text-secondary);">已完成 ✓</div></div>
+          </div>
+          <div style="display:flex;gap:12px;padding:8px 0;align-items:center;">
+            <div style="width:4px;height:40px;background:var(--accent);border-radius:2px;"></div>
+            <div><div style="font-size:14px;font-weight:500;">11:00-12:00 拜访王德峰</div><div style="font-size:12px;color:var(--accent);">进行中</div></div>
+          </div>
+          <div style="display:flex;gap:12px;padding:8px 0;align-items:center;">
+            <div style="width:4px;height:40px;background:var(--border);border-radius:2px;"></div>
+            <div><div style="font-size:14px;font-weight:500;color:var(--text-light);">14:00-16:00 陪访张建国</div><div style="font-size:12px;color:var(--text-light);">待开始</div></div>
+          </div>
+        </div>
+
+        <div class="card" style="background:var(--primary-bg);">
+          <div style="font-size:13px;">
+            <span style="font-weight:600;">💡 AI建议：</span>
+            <span style="color:var(--text-secondary);">今日交通时间占比偏高（22%），建议调整拜访顺序可节省约30分钟。</span>
+          </div>
+        </div>
+
+        <div style="height:16px;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== SUBPAGE: Coach Detail ==================== -->
+    <div class="subpage-overlay" id="subCoachDetail">
+      <div class="subpage-header">
+        <button class="header-back" onclick="closeSubpage('subCoachDetail')">‹ 返回</button>
+        <span style="font-size:14px;color:var(--text-secondary);">陪访详情</span>
+        <span></span>
+      </div>
+      <div class="main-content" style="padding-top:0;">
+        <div class="customer-detail-header" style="background:linear-gradient(135deg,#059669,#06b6d4);">
+          <div class="c-name">张建国 陪访任务</div>
+          <div class="c-tags"><span>高复杂度</span><span>重疾+年金</span><span>主管陪访</span></div>
+          <div class="c-stats">
+            <div><div class="num">2</div><div class="label">涉及险种</div></div>
+            <div><div class="num">新人</div><div class="label">代理人经验</div></div>
+            <div><div class="num">14:00</div><div class="label">今日下午</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>🤝 陪访信息</span></div>
+          <div style="display:flex;gap:12px;margin-bottom:12px;">
+            <div class="avatar avatar-sm" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">李</div>
+            <div>
+              <div style="font-size:14px;font-weight:500;">陪访人：李国强（销售主管）</div>
+              <div style="font-size:12px;color:var(--text-secondary);">从业12年 | 擅长重疾+年金方案</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;">
+            <div class="avatar avatar-sm" style="background:linear-gradient(135deg,#2563eb,#06b6d4);">王</div>
+            <div>
+              <div style="font-size:14px;font-weight:500;">代理人：王小明（陪访对象）</div>
+              <div style="font-size:12px;color:var(--text-secondary);">从业3年 | 本月第2次陪访</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>📋 陪访前准备清单</span></div>
+          <div style="display:flex;gap:8px;align-items:center;padding:8px 0;">
+            <span style="color:var(--success);">✅</span>
+            <span style="font-size:13px;">客户画像已同步</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;padding:8px 0;">
+            <span style="color:var(--success);">✅</span>
+            <span style="font-size:13px;">建议书已生成</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;padding:8px 0;">
+            <span style="color:var(--accent);">⏳</span>
+            <span style="font-size:13px;">陪访要点提纲（AI生成）</span>
+          </div>
+          <div style="padding:10px;background:var(--primary-bg);border-radius:8px;margin-top:4px;font-size:13px;line-height:1.6;">
+            <b>AI建议陪访要点：</b><br>
+            1. 主谈由李主管负责，小王辅助记录和产品展示<br>
+            2. 重点应对客户对费率的疑虑<br>
+            3. 抓住客户妻子生日这个情感切入点<br>
+            4. 准备两套方案备选，给客户选择权
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-block" style="margin-bottom:8px;" onclick="showToast('✅ 陪访已确认！今日14:00 张建国，陪访人：李国强')">
+          ✅ 确认陪访
+        </button>
+        <button class="btn btn-outline btn-block" onclick="showToast('📊 该客户历史陪访记录：2次，成单率100%')">
+          📊 查看历史陪访记录
+        </button>
+        <div style="height:16px;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== Tab Bar ==================== -->
+    <div class="tab-bar">
+      <button class="tab-item active" data-tab="0" onclick="switchTab(0, 'pageHome')">
+        <span class="tab-icon">🏠</span>
+        <span>工作台</span>
+      </button>
+      <button class="tab-item" data-tab="1" onclick="switchTab(1, 'pageVisit')">
+        <span class="tab-icon">📋</span>
+        <span>拜访</span>
+      </button>
+      <button class="tab-item" data-tab="2" onclick="switchTab(2, 'pageCoach')">
+        <span class="tab-icon">🤝</span>
+        <span>陪访</span>
+      </button>
+      <button class="tab-item" data-tab="3" onclick="switchTab(3, 'pageSchedule')">
+        <span class="tab-icon">📅</span>
+        <span>日程</span>
+      </button>
+      <button class="tab-item" data-tab="4" onclick="switchTab(4, 'pageProfile')">
+        <span class="tab-icon">👤</span>
+        <span>我的</span>
+      </button>
+    </div>
+
+  <div class="toast" id="toast"></div>
+  </div><!-- /app-container -->
+</div><!-- /phone -->
+
+<script>
+// ========== Toast Notification ==========
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ========== Tab Navigation ==========
+function switchTab(index, pageId) {
+  // Hide all pages
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  // Show target
+  document.getElementById(pageId).classList.add('active');
+  // Update tab bar
+  document.querySelectorAll('.tab-item').forEach((t, i) => {
+    t.classList.toggle('active', i === index);
+  });
+  // Close any open subpages
+  document.querySelectorAll('.subpage-overlay').forEach(s => s.classList.remove('show'));
+}
+
+// ========== Subpage Navigation ==========
+function openSubpage(id) {
+  document.getElementById(id).classList.add('show');
+}
+function closeSubpage(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+// ========== Shortcut: Open visit flow from home ==========
+function openVisit() {
+  switchTab(1, 'pageVisit');
+}
+
+// ========== Voice Recording Toggle ==========
+let isRecording = false;
+function toggleRecording() {
+  isRecording = true;
+  const preState = document.getElementById('preRecordState');
+  const recState = document.getElementById('recordingState');
+  const badge = document.getElementById('recBadge');
+  const timer = document.getElementById('recTimer');
+
+  preState.style.display = 'none';
+  recState.style.display = 'flex';
+  badge.style.background = '#fee2e2';
+  badge.style.color = '#ef4444';
+  badge.textContent = '● 录音中';
+  timer.textContent = '已录音 00:00';
+  // Simulate transcript appearing
+  simTranscription();
+}
+
+let simTimer = null;
+function simTranscription() {
+  const content = document.getElementById('transcriptContent');
+  const lines = [
+    '<span style="color:var(--primary);font-weight:500;">代理人：</span>张哥，您之前买的那份重疾险快到期了，我想跟您聊聊续保的事。',
+    '<span style="color:var(--accent);font-weight:500;">客户：</span>哦对，我也在想这个事。最近家里花销大，不知道这个保费会不会涨。',
+    '<span style="color:var(--primary);font-weight:500;">代理人：</span>这个您放心，续保的话费率是按您投保时的年龄算的，不会因为年龄增长而涨价。',
+    '<span style="color:var(--accent);font-weight:500;">客户：</span>那就好。不过我听说现在有个新产品，保障范围更广？',
+    '<span style="color:var(--primary);font-weight:500;">代理人：</span>是的，我们今年新推出了一个升级版，在原有重疾基础上增加了轻症赔付和中症保障。',
+    '<span style="color:var(--accent);font-weight:500;">客户：</span>那这个升级版保费贵多少？我看看划不划算。',
+    '<span style="color:var(--primary);font-weight:500;">代理人：</span>升级版只多了15%的保费，但保障范围扩大了近一倍，性价比很高。'
+  ];
+  let i = 0;
+  content.innerHTML = '';
+  if (simTimer) clearInterval(simTimer);
+  simTimer = setInterval(() => {
+    if (i >= lines.length) { clearInterval(simTimer); return; }
+    const div = document.createElement('div');
+    div.style.marginTop = i > 0 ? '6px' : '0';
+    div.innerHTML = lines[i];
+    content.appendChild(div);
+    const box = document.getElementById('transcriptBox');
+    if (box) box.scrollTop = box.scrollHeight;
+    i++;
+  }, 1500);
+  // Clear timer when leaving page
+  window._simTimer = simTimer;
+}
+
+// ========== Route Editing ==========
+function toggleRouteEdit() {
+  const container = document.getElementById('routeStops');
+  const btn = document.getElementById('routeEditBtn');
+  const isEditing = container.classList.contains('editing');
+  if (isEditing) {
+    container.classList.remove('editing');
+    btn.textContent = '编辑';
+    showToast('✅ 路线已保存');
+  } else {
+    container.classList.add('editing');
+    btn.textContent = '完成';
+    showToast('✏️ 点击↑↓箭头调整顺序');
+  }
+}
+
+function moveRouteStop(index, direction) {
+  const container = document.getElementById('routeStops');
+  const children = container.children;
+  const newIndex = index + direction;
+  if (newIndex < 0 || newIndex >= children.length) {
+    showToast('已到边界，无法继续移动');
+    return;
+  }
+  const el = children[index];
+  const target = children[newIndex];
+  if (direction < 0) {
+    container.insertBefore(el, target);
+  } else {
+    container.insertBefore(el, target.nextSibling);
+  }
+  updateRouteNumbers();
+  showToast('🔄 顺序已调整');
+}
+
+function updateRouteNumbers() {
+  const container = document.getElementById('routeStops');
+  const stops = container.querySelectorAll('.customer-card');
+  const colors = ['var(--primary)', 'var(--accent)', 'var(--secondary)'];
+  stops.forEach((s, i) => {
+    s.dataset.index = i;
+    const numDiv = s.querySelector('.num-badge');
+    if (numDiv) { numDiv.textContent = i + 1; numDiv.style.background = colors[i] || 'var(--primary)'; }
+    const btns = s.querySelectorAll('button');
+    if (btns.length >= 2) {
+      btns[0].setAttribute('onclick', `moveRouteStop(${i}, -1)`);
+      btns[1].setAttribute('onclick', `moveRouteStop(${i}, 1)`);
+    }
+  });
+
+  // Distance matrix (km) between locations
+  const dist = {
+    '公司': { '张建国': 3.2, '王德峰': 7, '李美玲': 12.5 },
+    '张建国': { '公司': 3.2, '王德峰': 5.0, '李美玲': 8.5 },
+    '王德峰': { '公司': 7, '张建国': 5.0, '李美玲': 4.5 },
+    '李美玲': { '公司': 12.5, '张建国': 8.5, '王德峰': 4.5 }
+  };
+  const SPEED = 25; // km/h, city driving
+  const VISIT_DURATION = 50; // minutes per visit
+
+  const names = Array.from(stops).map(st => {
+    const nameEl = st.querySelector('.name');
+    return nameEl ? nameEl.textContent.trim().split(' ')[0] : '';
+  });
+
+  // Calculate times dynamically based on order
+  let schedule = [];
+  let prev = '公司';
+  let currentMinute = 9 * 60; // start at 09:00
+
+  names.forEach((name, i) => {
+    const d = dist[prev] && dist[prev][name] ? dist[prev][name] : 5;
+    const travelMin = Math.ceil(d / SPEED * 60);
+    currentMinute += travelMin;
+    const startH = Math.floor(currentMinute / 60);
+    const startM = currentMinute % 60;
+    const endMin = currentMinute + VISIT_DURATION;
+    const endH = Math.floor(endMin / 60);
+    const endM = endMin % 60;
+    const timeStr =
+      String(startH).padStart(2, '0') + ':' + String(startM).padStart(2, '0') + '-' +
+      String(endH).padStart(2, '0') + ':' + String(endM).padStart(2, '0');
+    schedule.push({ name, time: timeStr, travel: travelMin, km: d });
+    currentMinute = endMin;
+    prev = name;
+  });
+
+  let totalKm = schedule.reduce((s, o) => s + o.km, 0);
+  document.getElementById('routePathText').innerHTML = '🏢 公司 <span style="color:var(--text-light)">→</span> ' +
+    schedule.map((o, j) => o.name + ' <span style="color:var(--text-light);font-size:12px;">(' + o.km.toFixed(1) + 'km)</span>').join(' <span style="color:var(--text-light)">→</span> ');
+  document.getElementById('routeTimeText').textContent = '预计：' + schedule.map(o => o.time + ' ' + o.name).join(' → ');
+  const totalTime = schedule.reduce((s, o) => s + o.travel, 0) + schedule.length * VISIT_DURATION;
+  document.getElementById('routeTotalInfo').textContent =
+    '总里程 ' + totalKm.toFixed(1) + 'km | 总耗时约 ' + Math.floor(totalTime / 60) + 'h' + (totalTime % 60) + 'min';
+
+  // Update SVG map labels (text indices: 0=🏠, 1=起点, 2=①号, 3=①名, 4=②号, 5=②名, 6=③号, 7=③名)
+  const svgLabels = document.querySelectorAll('#subRoute .route-map text');
+  if (svgLabels.length >= 8) {
+    for (let j = 0; j < 3; j++) {
+      const numIdx = 2 + j * 2;   // 2,4,6
+      const nameIdx = 3 + j * 2;   // 3,5,7
+      if (schedule[j]) {
+        svgLabels[numIdx].textContent = String(j + 1);
+        svgLabels[nameIdx].textContent = schedule[j].name;
+      }
+    }
+  }
+}
+
+// ========== Speech Tab Switching ==========
+function switchSpeechTab(btn) {
+  document.querySelectorAll('#subSpeech .btn-sm').forEach(b => {
+    b.className = 'btn btn-outline btn-sm';
+    b.style.flexShrink = '0';
+  });
+  btn.className = 'btn btn-primary btn-sm';
+  btn.style.flexShrink = '0';
+  showToast('💬 切换到「' + btn.textContent + '」话术场景');
+}
+
+// Clean up recording when leaving visit page
+function stopVisit() {
+  if (window._simTimer) {
+    clearInterval(window._simTimer);
+    window._simTimer = null;
+  }
+  isRecording = false;
+}
+
+// ========== Select Day in Schedule ==========
+function selectDay(el) {
+  document.querySelectorAll('.day-tab').forEach(d => d.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ========== Q&A Demo ==========
+function sendQA() {
+  const input = document.getElementById('qaInput');
+  const text = input.value.trim();
+  if (!text) return;
+  const chatArea = document.getElementById('chatArea');
+  const userMsg = document.createElement('div');
+  userMsg.className = 'msg msg-user';
+  userMsg.textContent = text;
+  chatArea.insertBefore(userMsg, chatArea.lastElementChild);
+  const aiMsg = document.createElement('div');
+  aiMsg.className = 'msg msg-ai';
+  const responses = {
+    '保费': '这款产品的保费是根据年龄和保额计算的。以张先生45岁为例，50万保额20年缴，每年约8,650元。平均每天23.7元。',
+    '对比': '和市场上同类产品相比，我们的优势在于：①轻症/中症/重疾全覆盖 ②轻症确诊后豁免后续保费 ③可选70岁或终身保障。性价比在行业前列。',
+    '理赔': '理赔流程很简单：确诊后拨打客服热线 → 提交理赔材料 → 审核（一般3-5个工作日）→ 赔付到账。支持线上提交材料，无需跑柜台。'
+  };
+  let found = false;
+  for (const [key, val] of Object.entries(responses)) {
+    if (text.includes(key)) { aiMsg.innerHTML = val; found = true; break; }
+  }
+  if (!found) {
+    aiMsg.textContent = '好的，我查一下相关信息。根据我们的产品资料，您关心的问题我给您详细说明...（模拟回复）';
+  }
+  chatArea.insertBefore(aiMsg, chatArea.lastElementChild);
+  input.value = '';
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+// ========== Update Status Bar Time ==========
+function updateTime() {
+  const now = new Date();
+  document.getElementById('statusTime').textContent =
+    now.getHours().toString().padStart(2, '0') + ':' +
+    now.getMinutes().toString().padStart(2, '0');
+}
+updateTime();
+setInterval(updateTime, 30000);
+</script>
+</body>
+</html>
